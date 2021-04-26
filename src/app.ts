@@ -5,9 +5,13 @@ import _ from 'underscore'
 import { generateGoList } from './generateGoList'
 import { sendMessage } from './sendMessage'
 
-const token = '1598274294:AAFpwCEtW7hNsUemf15HaiEuuI3NZ5sSzJI'
+const token = process.env.BOT_TOKEN
+const endpoint = process.env.BOT_URL
 if (token === undefined) {
   throw new Error('BOT_TOKEN must be provided!')
+}
+if (endpoint === undefined) {
+  throw new Error('BOT_URL must be provided!')
 }
 
 const bot = new Telegraf(token)
@@ -19,7 +23,7 @@ bot.hears(/^\/?(go|gg|lista|invito|vamos|dale)$/i, (ctx) => {
 //bot.launch()
 // Set telegram webhook
 // npm install -g localtunnel && lt --port 3000
-bot.telegram.setWebhook('https://tricky-cat-27.loca.lt/some-path')
+bot.telegram.setWebhook(token)
 
 const app = express()
 app.get('/', (req: Request, res: Response) => res.send('Hello World!'))

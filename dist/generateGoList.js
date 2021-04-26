@@ -36,10 +36,9 @@ var generateGoList = function (ctx, reply) {
                 var attNicksText_1 = '‼️ Atentos casuals ‼️\n';
                 attNicks.forEach(function (m) {
                     if (m && m.length > 1) {
-                        attNicksText_1 = attNicksText_1 + " @" + m[1];
+                        attNicksText_1 = attNicksText_1 + "@" + m[1] + " ";
                     }
                 });
-                //sendMessage(ctx, 'normal', attNicksText)
                 sendMessage_1.sendMessage(ctx, 'html', attNicksText_1 + "\n\n<a href=\"" + boss[0].url + "\"><b>" + bossText + "</b></a> de <a href=\"" + links_1[0].url + "\"><b>" + users_1[0] + "</b></a>\n\uD83D\uDD3D" + hour + "\uD83D\uDD3D");
                 sendMessage_1.sendMessage(ctx, 'markdown', "`" + attendants_1.join(',') + "`");
                 if (attendants_1.length > 5) {
