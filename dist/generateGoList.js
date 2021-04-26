@@ -44,11 +44,11 @@ var generateGoList = function (ctx, reply) {
                 if (attendants_1.length > 5) {
                     var att = attendants_1.length;
                     var sizes = [];
-                    var s = Math.ceil(att / (att % 5));
-                    var n = Math.ceil(att / s);
+                    var s = Math.ceil(att / 5);
+                    var n = Math.floor(att / s);
                     var r = att - n * s;
-                    for (var i = 0; i < n; i += 1) {
-                        sizes.push(s);
+                    for (var i = 0; i < s; i += 1) {
+                        sizes.push(n);
                     }
                     for (var i = 0; i < r; i += 1) {
                         sizes[i] += 1;

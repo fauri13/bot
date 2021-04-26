@@ -45,11 +45,11 @@ export const generateGoList = (ctx: Context, reply: Message.TextMessage & Messag
         if (attendants.length > 5) {
           const att = attendants.length
           const sizes: Array<number> = []
-          const s = Math.ceil(att / (att % 5))
-          const n = Math.ceil(att/s)
+          const s = Math.ceil(att / 5)
+          const n = Math.floor(att/s)
           const r = att - n*s
-          for (let i = 0; i < n; i += 1) {
-            sizes.push(s)
+          for (let i = 0; i < s; i += 1) {
+            sizes.push(n)
           }
           for (let i = 0; i < r; i += 1) {
             sizes[i] += 1

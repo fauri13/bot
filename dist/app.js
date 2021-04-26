@@ -23,7 +23,7 @@ bot.hears(/^\/?(go|gg|lista|invito|vamos|dale)$/i, function (ctx) {
 //bot.launch()
 // Set telegram webhook
 // npm install -g localtunnel && lt --port 3000
-bot.telegram.setWebhook(token);
+bot.telegram.setWebhook(endpoint + "/some-path");
 var app = express_1.default();
 app.get('/', function (req, res) { return res.send('Hello World!'); });
 // Set the bot API endpoint

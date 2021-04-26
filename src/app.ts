@@ -23,7 +23,7 @@ bot.hears(/^\/?(go|gg|lista|invito|vamos|dale)$/i, (ctx) => {
 //bot.launch()
 // Set telegram webhook
 // npm install -g localtunnel && lt --port 3000
-bot.telegram.setWebhook(token)
+bot.telegram.setWebhook(`${endpoint}/some-path`)
 
 const app = express()
 app.get('/', (req: Request, res: Response) => res.send('Hello World!'))
