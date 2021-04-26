@@ -7,6 +7,7 @@ import { sendMessage } from './sendMessage'
 
 const token = process.env.BOT_TOKEN
 const endpoint = process.env.BOT_URL
+const path = process.env.BOT_PATH
 if (token === undefined) {
   throw new Error('BOT_TOKEN must be provided!')
 }
@@ -23,12 +24,12 @@ bot.hears(/^\/?(go|gg|lista|invito|vamos|dale)$/i, (ctx) => {
 //bot.launch()
 // Set telegram webhook
 // npm install -g localtunnel && lt --port 3000
-bot.telegram.setWebhook(`${endpoint}/some-path`)
+bot.telegram.setWebhook(`${endpoint}${path}`)
 
 const app = express()
 app.get('/', (req: Request, res: Response) => res.send('Hello World!'))
 // Set the bot API endpoint
-app.use(bot.webhookCallback('/some-path'))
+app.use(bot.webhookCallback(path))
 app.listen(3002, () => {
   console.log('Example app listening on port 3000!')
 })
