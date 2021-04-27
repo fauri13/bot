@@ -3,22 +3,23 @@ import { Message, MessageEntity } from "telegraf/typings/core/types/typegram"
 import _ from "underscore"
 import db from "./database"
 import { sendMessage } from "./sendMessage"
+import { writeLog } from "./writeLog"
 
-const debug = process.env.DEBUG_TRACES === 'true'
+const pikachuId = Number.parseInt(process.env.PIKACHU_ID || '', 10)
 
 export const generateGoList = (ctx: Context, reply: Message.TextMessage & Message.MediaMessage) => {
-  if (reply) {
+  if (reply && reply.from?.id === pikachuId) {
     const entities = (reply.entities || reply.caption_entities) as Array<MessageEntity.TextLinkMessageEntity>
     const text = reply.text || reply.caption
     if (text && entities) {
-      if (debug) console.log(text)
-      if (debug) console.log(entities)
+      writeLog(text)
+      writeLog(entities)
       const boss = entities
         .filter(e => e.type === 'text_link' && e.url.match('pokebattler'))
       let links = entities
         .filter(e => e.type === 'text_link' && e.url.match('t\.me\/(?!detectivepikachubot)(.*)'))
 
-      if (links.length) {
+      if (links.length > 1) {
         let bossText = ''
         let bossTextPlain = ''
         const hourMatch = text.match(/(🇪🇸\d+[^\n\\]+)/)

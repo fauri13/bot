@@ -1,19 +1,26 @@
 import { Promise } from 'bluebird'
 import { Context } from 'telegraf';
 import { ExtraReplyMessage } from 'telegraf/typings/telegram-types';
-
-const debug = process.env.DEBUG_TRACES === 'true'
+import { writeLog } from './writeLog';
 
 type MessageType = 'normal' | 'markdown' | 'html'
+interface QueueObject {
+  resolve: any
+  reject: any
+  ctx: Context
+  message: string
+  type: MessageType
+  options: ExtraReplyMessage
+}
 
-var queue: Array<{ resolve: any, reject: any, ctx: Context, message: string, type: MessageType, options: ExtraReplyMessage }> = [];
+var queue: Array<QueueObject> = [];
 var inUseQueue = [];
 const _sendMessages = () => {
     // if we are already sending messages from the queue, or
     // the queue is empty, stop
     if (inUseQueue.length || !queue.length) return;
 
-    if (debug) console.log("processing queue")
+    writeLog('processing queue')
     inUseQueue = queue
     queue = []
     Promise.mapSeries(inUseQueue, function(request) {
@@ -22,7 +29,7 @@ const _sendMessages = () => {
         const ctx = request.ctx
         const type = request.type
         const options = request.options
-        if (debug) console.log("sending message '%s'", request.message);
+        writeLog(`sending message '${request.message}'`);
         if (type === 'markdown') {
           return ctx.replyWithMarkdown(request.message)
               .then(resolve)
@@ -37,7 +44,7 @@ const _sendMessages = () => {
               .catch(reject)
         }
     }).then(function() {
-      if (debug) console.log("queue processed")
+      writeLog('queue processed')
         inUseQueue = []
         _sendMessages()
     });
@@ -49,7 +56,7 @@ export const sendMessage = (ctx: Context, type: MessageType, message: string, op
         resolve = promiseResolve;
         reject = promiseReject;
     });
-    if (debug) console.log("pushing message '%s' to queue", message)
+    writeLog(`pushing message '${message}' to queue`)
     queue.push({ ctx, message, resolve, reject, type, options })
     process.nextTick(_sendMessages)
     return promise

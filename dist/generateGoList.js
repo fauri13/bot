@@ -7,21 +7,19 @@ exports.generateGoList = void 0;
 const underscore_1 = __importDefault(require("underscore"));
 const database_1 = __importDefault(require("./database"));
 const sendMessage_1 = require("./sendMessage");
-const debug = process.env.DEBUG_TRACES === 'true';
+const writeLog_1 = require("./writeLog");
 const generateGoList = (ctx, reply) => {
     if (reply) {
         const entities = (reply.entities || reply.caption_entities);
         const text = reply.text || reply.caption;
         if (text && entities) {
-            if (debug)
-                console.log(text);
-            if (debug)
-                console.log(entities);
+            writeLog_1.writeLog(text);
+            writeLog_1.writeLog(entities);
             const boss = entities
                 .filter(e => e.type === 'text_link' && e.url.match('pokebattler'));
             let links = entities
                 .filter(e => e.type === 'text_link' && e.url.match('t\.me\/(?!detectivepikachubot)(.*)'));
-            if (links.length) {
+            if (links.length > 1) {
                 let bossText = '';
                 let bossTextPlain = '';
                 const hourMatch = text.match(/(🇪🇸\d+[^\n\\]+)/);

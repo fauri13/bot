@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.sendMessage = void 0;
 const bluebird_1 = require("bluebird");
-const debug = process.env.DEBUG_TRACES === 'true';
+const writeLog_1 = require("./writeLog");
 var queue = [];
 var inUseQueue = [];
 const _sendMessages = () => {
@@ -10,8 +10,7 @@ const _sendMessages = () => {
     // the queue is empty, stop
     if (inUseQueue.length || !queue.length)
         return;
-    if (debug)
-        console.log("processing queue");
+    writeLog_1.writeLog('processing queue');
     inUseQueue = queue;
     queue = [];
     bluebird_1.Promise.mapSeries(inUseQueue, function (request) {
@@ -20,8 +19,7 @@ const _sendMessages = () => {
         const ctx = request.ctx;
         const type = request.type;
         const options = request.options;
-        if (debug)
-            console.log("sending message '%s'", request.message);
+        writeLog_1.writeLog(`sending message '${request.message}'`);
         if (type === 'markdown') {
             return ctx.replyWithMarkdown(request.message)
                 .then(resolve)
@@ -38,8 +36,7 @@ const _sendMessages = () => {
                 .catch(reject);
         }
     }).then(function () {
-        if (debug)
-            console.log("queue processed");
+        writeLog_1.writeLog('queue processed');
         inUseQueue = [];
         _sendMessages();
     });
@@ -50,8 +47,7 @@ const sendMessage = (ctx, type, message, options = {}) => {
         resolve = promiseResolve;
         reject = promiseReject;
     });
-    if (debug)
-        console.log("pushing message '%s' to queue", message);
+    writeLog_1.writeLog(`pushing message '${message}' to queue`);
     queue.push({ ctx, message, resolve, reject, type, options });
     process.nextTick(_sendMessages);
     return promise;
