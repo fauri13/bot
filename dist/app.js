@@ -11,6 +11,7 @@ const token = process.env.BOT_TOKEN;
 const endpoint = process.env.BOT_URL;
 const path = process.env.BOT_PATH;
 const port = process.env.BOT_PORT;
+const allowedChats = process.env.ALLOWED_CHATS;
 if (token === undefined) {
     throw new Error('BOT_TOKEN must be provided!');
 }
@@ -20,19 +21,22 @@ if (endpoint === undefined) {
 if (port === undefined) {
     throw new Error('BOT_PORT must be provided!');
 }
+const chatAllowed = (chatId) => allowedChats ? allowedChats.indexOf(chatId.toString()) !== -1 : true;
 const bot = new telegraf_1.Telegraf(token);
 bot.hears(/^\/?(go|gg|lista|invito|vamos|dale)$/i, (ctx) => {
-    if (ctx.message.reply_to_message) {
+    if (chatAllowed(ctx.chat.id) && ctx.message.reply_to_message) {
         generateGoList_1.generateGoList(ctx, ctx.message.reply_to_message);
     }
 });
 bot.command('raidstoday', async (ctx) => {
-    const raids = await database_1.default.getRaids(new Date(Date.now()).toDateString());
-    ctx.deleteMessage(ctx.message.message_id);
-    ctx.reply(`Hoy se ha(n) hecho ${raids} raid(s)`);
+    if (chatAllowed(ctx.chat.id)) {
+        const raids = await database_1.default.getRaids(new Date(Date.now()).toDateString());
+        ctx.deleteMessage(ctx.message.message_id);
+        ctx.reply(`Hoy se ha${raids > 1 ? 'n' : ''} hecho ${raids} raid${raids > 1 ? 's' : ''})`);
+    }
 });
 bot.command('enfermos', async (ctx) => {
-    if (ctx.chat.id === -517067676) {
+    if (chatAllowed(ctx.chat.id)) {
         const enfermos = await database_1.default.getTopRaidParticipants(new Date(Date.now()).toDateString());
         ctx.deleteMessage(ctx.message.message_id);
         if (enfermos && enfermos.length) {

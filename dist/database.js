@@ -50,7 +50,7 @@ class DB {
         INNER JOIN Raids r on r.id = p.raidId
         WHERE r.date = '${date}'
         GROUP BY p.participant
-        ORDER BY COUNT(*)
+        ORDER BY COUNT(*) desc
       `, (_err, row) => {
                     if (!_err && row) {
                         resolve(underscore_1.default(row).take(5));

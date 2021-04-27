@@ -31,7 +31,7 @@ const generateGoList = (ctx, reply) => {
                     bossText = `<a href="${boss[0].url}"><b>${bossTextPlain}</b></a>`;
                 }
                 else {
-                    const matches = text.match(/^.\s+(\w+(\s\w+)?)\s+de/);
+                    const matches = text.match(/^.+?\s+(\w+(\s\w+)?)\s+de/);
                     bossText = matches ? `<b>${matches[1]}</b>` : 'no boss found';
                 }
                 let users = [];
@@ -78,7 +78,7 @@ const generateGoList = (ctx, reply) => {
                     });
                 }
                 const participants = [...attendants];
-                if (usersRemoved.indexOf(creator) >= 0) {
+                if (usersRemoved.indexOf(creator) < 0) {
                     participants.push(creator);
                 }
                 database_1.default.insertRaid({ boss: bossTextPlain, creator, date: new Date(Date.now()).toDateString(), time: hour, participants });

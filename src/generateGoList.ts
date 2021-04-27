@@ -27,7 +27,7 @@ export const generateGoList = (ctx: Context, reply: Message.TextMessage & Messag
           bossTextPlain = text.slice(boss[0].offset, boss[0].offset + boss[0].length)
           bossText = `<a href="${boss[0].url}"><b>${bossTextPlain}</b></a>`
         } else {
-          const matches = text.match(/^.\s+(\w+(\s\w+)?)\s+de/)
+          const matches = text.match(/^.+?\s+(\w+(\s\w+)?)\s+de/)
           bossText = matches ? `<b>${matches[1]}</b>` : 'no boss found'
         }
         
@@ -84,7 +84,7 @@ export const generateGoList = (ctx: Context, reply: Message.TextMessage & Messag
         }
 
         const participants = [...attendants]
-        if (usersRemoved.indexOf(creator) >= 0) {
+        if (usersRemoved.indexOf(creator) < 0) {
           participants.push(creator)
         }
         db.insertRaid({ boss: bossTextPlain, creator, date: new Date(Date.now()).toDateString(), time: hour, participants })
