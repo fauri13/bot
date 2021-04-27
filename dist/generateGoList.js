@@ -4,62 +4,84 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.generateGoList = void 0;
-var underscore_1 = __importDefault(require("underscore"));
-var sendMessage_1 = require("./sendMessage");
-var generateGoList = function (ctx, reply) {
+const underscore_1 = __importDefault(require("underscore"));
+const database_1 = __importDefault(require("./database"));
+const sendMessage_1 = require("./sendMessage");
+const debug = process.env.DEBUG_TRACES === 'true';
+const generateGoList = (ctx, reply) => {
     if (reply) {
-        var entities = (reply.entities || reply.caption_entities);
-        var text_1 = reply.text || reply.caption;
-        if (text_1 && entities) {
-            // console.log(text)
-            // console.log(entities)
-            var boss = entities
-                .filter(function (e) { return e.type === 'text_link' && e.url.match('pokebattler'); });
-            var links_1 = entities
-                .filter(function (e) { return e.type === 'text_link' && e.url.match('t\.me\/(?!detectivepikachubot)(.*)'); });
-            if (boss.length && links_1.length) {
-                var bossText = '';
-                var hourMatch = text_1.match('(🇪🇸[^\n]+)');
-                var hour = hourMatch ? hourMatch[0] : '';
+        const entities = (reply.entities || reply.caption_entities);
+        const text = reply.text || reply.caption;
+        if (text && entities) {
+            if (debug)
+                console.log(text);
+            if (debug)
+                console.log(entities);
+            const boss = entities
+                .filter(e => e.type === 'text_link' && e.url.match('pokebattler'));
+            let links = entities
+                .filter(e => e.type === 'text_link' && e.url.match('t\.me\/(?!detectivepikachubot)(.*)'));
+            if (links.length) {
+                let bossText = '';
+                let bossTextPlain = '';
+                const hourMatch = text.match(/(🇪🇸\d+[^\n\\]+)/);
+                let hour = hourMatch ? hourMatch[0] : '';
                 if (boss && boss.length) {
-                    bossText = text_1.slice(boss[0].offset, boss[0].offset + boss[0].length);
+                    bossTextPlain = text.slice(boss[0].offset, boss[0].offset + boss[0].length);
+                    bossText = `<a href="${boss[0].url}"><b>${bossTextPlain}</b></a>`;
                 }
-                var users_1 = [];
-                if (links_1) {
-                    links_1.forEach(function (e) {
-                        users_1.push(text_1.slice(e.offset, e.offset + e.length));
-                    });
+                else {
+                    const matches = text.match(/^.\s+(\w+(\s\w+)?)\s+de/);
+                    bossText = matches ? `<b>${matches[1]}</b>` : 'no boss found';
                 }
-                var attendants_1 = underscore_1.default.uniq(users_1).slice(1);
-                var attLinks = links_1.filter(function (l) { return l.url !== links_1[0].url; });
-                var attNicks = attLinks.map(function (l) { return l.url.match('t\.me\/(?!detectivepikachubot)(.*)'); });
-                var attNicksText_1 = '‼️ Atentos casuals ‼️\n';
-                attNicks.forEach(function (m) {
+                let users = [];
+                let usersRemoved = [];
+                const usersRemovedMatch = text.matchAll(/❌[^\d]+\d+\s+(\w+)/g);
+                let m = usersRemovedMatch.next();
+                while (!m.done) {
+                    usersRemoved.push(m.value[1]);
+                    links = links.filter(l => l.offset > (m.value.index + 10) || l.offset < m.value.index);
+                    m = usersRemovedMatch.next();
+                }
+                links.forEach(e => {
+                    users.push(text.slice(e.offset, e.offset + e.length));
+                });
+                const creator = users[0];
+                const attendants = underscore_1.default(users).chain().uniq().without(creator).value();
+                const attLinks = links.filter(l => l.url !== links[0].url);
+                const attNicks = attLinks.map(l => l.url.match('t\.me\/(?!detectivepikachubot)(.*)'));
+                let attNicksText = '‼️ Atentos Ksuals ‼️\n';
+                attNicks.forEach(m => {
                     if (m && m.length > 1) {
-                        attNicksText_1 = attNicksText_1 + "@" + m[1] + " ";
+                        attNicksText = `${attNicksText}@${m[1]} `;
                     }
                 });
-                sendMessage_1.sendMessage(ctx, 'html', attNicksText_1 + "\n\n<a href=\"" + boss[0].url + "\"><b>" + bossText + "</b></a> de <a href=\"" + links_1[0].url + "\"><b>" + users_1[0] + "</b></a>\n\uD83D\uDD3D" + hour + "\uD83D\uDD3D");
-                sendMessage_1.sendMessage(ctx, 'markdown', "`" + attendants_1.join(',') + "`");
-                if (attendants_1.length > 5) {
-                    var att = attendants_1.length;
-                    var sizes = [];
-                    var s = Math.ceil(att / 5);
-                    var n = Math.floor(att / s);
-                    var r = att - n * s;
-                    for (var i = 0; i < s; i += 1) {
+                sendMessage_1.sendMessage(ctx, 'html', `${attNicksText}\n\n${bossText} de <a href="${links[0].url}"><b>${creator}</b></a>\n🔽${hour}🔽`, { disable_web_page_preview: true });
+                sendMessage_1.sendMessage(ctx, 'markdown', `\`${attendants.join(',')}\``);
+                if (attendants.length > 5) {
+                    const att = attendants.length;
+                    const sizes = [];
+                    const s = Math.ceil(att / 5);
+                    const n = Math.floor(att / s);
+                    const r = att - n * s;
+                    for (let i = 0; i < s; i += 1) {
                         sizes.push(n);
                     }
-                    for (var i = 0; i < r; i += 1) {
+                    for (let i = 0; i < r; i += 1) {
                         sizes[i] += 1;
                     }
-                    var start_1 = 0;
+                    let start = 0;
                     sendMessage_1.sendMessage(ctx, 'normal', '--------------------------');
-                    sizes.forEach(function (s) {
-                        sendMessage_1.sendMessage(ctx, 'markdown', "`" + attendants_1.slice(start_1, start_1 + s).join(',') + "`");
-                        start_1 += s;
+                    sizes.forEach(s => {
+                        sendMessage_1.sendMessage(ctx, 'markdown', `\`${attendants.slice(start, start + s).join(',')}\``);
+                        start += s;
                     });
                 }
+                const participants = [...attendants];
+                if (usersRemoved.indexOf(creator) >= 0) {
+                    participants.push(creator);
+                }
+                database_1.default.insertRaid({ boss: bossTextPlain, creator, date: new Date(Date.now()).toDateString(), time: hour, participants });
             }
         }
     }

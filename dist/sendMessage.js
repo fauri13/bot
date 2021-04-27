@@ -1,31 +1,34 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.sendMessage = void 0;
-var bluebird_1 = require("bluebird");
+const bluebird_1 = require("bluebird");
+const debug = process.env.DEBUG_TRACES === 'true';
 var queue = [];
 var inUseQueue = [];
-var _sendMessages = function () {
+const _sendMessages = () => {
     // if we are already sending messages from the queue, or
     // the queue is empty, stop
     if (inUseQueue.length || !queue.length)
         return;
-    console.log("processing queue");
+    if (debug)
+        console.log("processing queue");
     inUseQueue = queue;
     queue = [];
     bluebird_1.Promise.mapSeries(inUseQueue, function (request) {
-        var _a;
-        var resolve = request.resolve;
-        var reject = request.reject;
-        var ctx = request.ctx;
-        var type = request.type;
-        console.log("sending message '%s'", request.message);
+        const resolve = request.resolve;
+        const reject = request.reject;
+        const ctx = request.ctx;
+        const type = request.type;
+        const options = request.options;
+        if (debug)
+            console.log("sending message '%s'", request.message);
         if (type === 'markdown') {
             return ctx.replyWithMarkdown(request.message)
                 .then(resolve)
                 .catch(reject);
         }
         else if (type === 'html') {
-            return ctx.replyWithHTML(request.message, { reply_to_message_id: (_a = ctx.message) === null || _a === void 0 ? void 0 : _a.message_id, disable_web_page_preview: true })
+            return ctx.replyWithHTML(request.message, options)
                 .then(resolve)
                 .catch(reject);
         }
@@ -35,19 +38,21 @@ var _sendMessages = function () {
                 .catch(reject);
         }
     }).then(function () {
-        console.log("queue processed");
+        if (debug)
+            console.log("queue processed");
         inUseQueue = [];
         _sendMessages();
     });
 };
-var sendMessage = function (ctx, type, message) {
-    var resolve, reject;
-    var promise = new bluebird_1.Promise(function (promiseResolve, promiseReject) {
+const sendMessage = (ctx, type, message, options = {}) => {
+    let resolve, reject;
+    const promise = new bluebird_1.Promise(function (promiseResolve, promiseReject) {
         resolve = promiseResolve;
         reject = promiseReject;
     });
-    console.log("pushing message '%s' to queue", message);
-    queue.push({ ctx: ctx, message: message, resolve: resolve, reject: reject, type: type });
+    if (debug)
+        console.log("pushing message '%s' to queue", message);
+    queue.push({ ctx, message, resolve, reject, type, options });
     process.nextTick(_sendMessages);
     return promise;
 };
