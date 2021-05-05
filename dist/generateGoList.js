@@ -8,8 +8,13 @@ const underscore_1 = __importDefault(require("underscore"));
 const database_1 = __importDefault(require("./database"));
 const sendMessage_1 = require("./sendMessage");
 const writeLog_1 = require("./writeLog");
+const pikachuId = Number.parseInt(process.env.PIKACHU_ID || '', 10);
+const updateUserNick = async (url, nick) => {
+    const alias = url.match('t\.me\/(.*)')[1];
+    database_1.default.updateUserNick(alias, nick);
+};
 const generateGoList = (ctx, reply) => {
-    if (reply) {
+    if (reply && reply.from?.id === pikachuId) {
         const entities = (reply.entities || reply.caption_entities);
         const text = reply.text || reply.caption;
         if (text && entities) {
@@ -29,7 +34,7 @@ const generateGoList = (ctx, reply) => {
                     bossText = `<a href="${boss[0].url}"><b>${bossTextPlain}</b></a>`;
                 }
                 else {
-                    const matches = text.match(/^.+?\s+(\w+(\s\w+)?)\s+de/);
+                    const matches = text.match(/^.+?\s+?(\w+(\s\w+)?)\s+de/);
                     bossText = matches ? `<b>${matches[1]}</b>` : 'no boss found';
                 }
                 let users = [];
@@ -42,20 +47,24 @@ const generateGoList = (ctx, reply) => {
                     m = usersRemovedMatch.next();
                 }
                 links.forEach(e => {
-                    users.push(text.slice(e.offset, e.offset + e.length));
+                    const nick = text.slice(e.offset, e.offset + e.length);
+                    updateUserNick(e.url, nick);
+                    users.push(nick);
                 });
                 const creator = users[0];
                 const attendants = underscore_1.default(users).chain().uniq().without(creator).value();
                 const attLinks = links.filter(l => l.url !== links[0].url);
-                const attNicks = attLinks.map(l => l.url.match('t\.me\/(?!detectivepikachubot)(.*)'));
+                const attAlias = attLinks.map(l => l.url.match('t\.me\/(?!detectivepikachubot)(.*)'));
                 let attNicksText = '‼️ Atentos Ksuals ‼️\n';
-                attNicks.forEach(m => {
+                attAlias.forEach(m => {
                     if (m && m.length > 1) {
                         attNicksText = `${attNicksText}@${m[1]} `;
                     }
                 });
                 sendMessage_1.sendMessage(ctx, 'html', `${attNicksText}\n\n${bossText} de <a href="${links[0].url}"><b>${creator}</b></a>\n🔽${hour}🔽`, { disable_web_page_preview: true });
-                sendMessage_1.sendMessage(ctx, 'markdown', `\`${attendants.join(',')}\``);
+                if (attendants.length) {
+                    sendMessage_1.sendMessage(ctx, 'markdown', `\`${attendants.join(',')}\``);
+                }
                 if (attendants.length > 5) {
                     const att = attendants.length;
                     const sizes = [];

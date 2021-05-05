@@ -7,6 +7,11 @@ import { writeLog } from "./writeLog"
 
 const pikachuId = Number.parseInt(process.env.PIKACHU_ID || '', 10)
 
+const updateUserNick = async (url: string, nick: string) => {
+  const alias = url.match('t\.me\/(.*)')![1]
+  db.updateUserNick(alias, nick)
+}
+
 export const generateGoList = (ctx: Context, reply: Message.TextMessage & Message.MediaMessage) => {
   if (reply && reply.from?.id === pikachuId) {
     const entities = (reply.entities || reply.caption_entities) as Array<MessageEntity.TextLinkMessageEntity>
@@ -28,7 +33,7 @@ export const generateGoList = (ctx: Context, reply: Message.TextMessage & Messag
           bossTextPlain = text.slice(boss[0].offset, boss[0].offset + boss[0].length)
           bossText = `<a href="${boss[0].url}"><b>${bossTextPlain}</b></a>`
         } else {
-          const matches = text.match(/^.+?\s+(\w+(\s\w+)?)\s+de/)
+          const matches = text.match(/^.+?\s+?(\w+(\s\w+)?)\s+de/)
           bossText = matches ? `<b>${matches[1]}</b>` : 'no boss found'
         }
         
@@ -42,14 +47,16 @@ export const generateGoList = (ctx: Context, reply: Message.TextMessage & Messag
           m = usersRemovedMatch.next()
         }
         links.forEach(e => {
-          users.push(text.slice(e.offset, e.offset + e.length))
+          const nick = text.slice(e.offset, e.offset + e.length)
+          updateUserNick(e.url, nick)
+          users.push(nick)
         });
         const creator = users[0]
         const attendants = _(users).chain().uniq().without(creator).value()
         const attLinks = links.filter(l => l.url !== links[0].url)
-        const attNicks = attLinks.map(l => l.url.match('t\.me\/(?!detectivepikachubot)(.*)'))
+        const attAlias = attLinks.map(l => l.url.match('t\.me\/(?!detectivepikachubot)(.*)'))
         let attNicksText = '‼️ Atentos Ksuals ‼️\n'
-        attNicks.forEach(m => {
+        attAlias.forEach(m => {
           if (m && m.length > 1) {
             attNicksText = `${attNicksText}@${m[1]} `
           }
@@ -61,8 +68,9 @@ export const generateGoList = (ctx: Context, reply: Message.TextMessage & Messag
           `${attNicksText}\n\n${bossText} de <a href="${links[0].url}"><b>${creator}</b></a>\n🔽${hour}🔽`,
           { disable_web_page_preview: true }
         )
-        sendMessage(ctx, 'markdown', `\`${attendants.join(',')}\``)
-
+        if (attendants.length) {
+          sendMessage(ctx, 'markdown', `\`${attendants.join(',')}\``)
+        }
         if (attendants.length > 5) {
           const att = attendants.length
           const sizes: Array<number> = []

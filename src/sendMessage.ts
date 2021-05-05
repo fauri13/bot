@@ -51,13 +51,14 @@ const _sendMessages = () => {
 }
 
 export const sendMessage = (ctx: Context, type: MessageType, message: string, options: ExtraReplyMessage = {}) => {
-    let resolve, reject
-    const promise = new Promise(function(promiseResolve, promiseReject) {
-        resolve = promiseResolve;
-        reject = promiseReject;
-    });
-    writeLog(`pushing message '${message}' to queue`)
-    queue.push({ ctx, message, resolve, reject, type, options })
-    process.nextTick(_sendMessages)
-    return promise
+  if (!message) return Promise.resolve()
+  let resolve, reject
+  const promise = new Promise(function(promiseResolve, promiseReject) {
+      resolve = promiseResolve;
+      reject = promiseReject;
+  });
+  writeLog(`pushing message '${message}' to queue`)
+  queue.push({ ctx, message, resolve, reject, type, options })
+  process.nextTick(_sendMessages)
+  return promise
 }

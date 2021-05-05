@@ -42,6 +42,8 @@ const _sendMessages = () => {
     });
 };
 const sendMessage = (ctx, type, message, options = {}) => {
+    if (!message)
+        return bluebird_1.Promise.resolve();
     let resolve, reject;
     const promise = new bluebird_1.Promise(function (promiseResolve, promiseReject) {
         resolve = promiseResolve;
