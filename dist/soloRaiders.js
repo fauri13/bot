@@ -177,28 +177,31 @@ const getFormList = async (ctx, bot) => {
         const raidBoss = await database_1.default.getRaidBoss(Number.parseInt(bossId, 10));
         const form = { id: Number(formId) };
         if (raidBoss) {
-            let participants = await database_1.default.getWantedRaidParticipants(raidBoss);
-            const plist = participants.filter((p) => p.user.nick && (!p.form || !p.form.id || p.form.id == Number(formId)));
-            if (plist && plist.length > 0) {
-                ctx.reply(plist.map((u) => `@${u.user.alias}`).join(' '));
-                if (plist.length > 5) {
-                    for (let i = 0; i < plist.length; i += 5) {
-                        // ctx.reply(plist.slice(i, i + 5).map(p => `@${p.user.alias}`).join(' '))
-                        ctx.replyWithMarkdown(`\`${plist.slice(i, i + 5).map((p) => p.user.nick).join(',')}\``);
-                    }
-                }
-                else {
-                    // ctx.reply(plist.map(p => `@${p.user.alias}`).join(' '))
-                    ctx.replyWithMarkdown(`\`${plist.map((p) => p.user.nick).join(',')}\``);
-                }
-                participants.forEach(p => {
-                    if (p.user.chatId) {
-                        try {
-                            bot.telegram.sendMessage(p.user.chatId, `${raidBoss.name} de ${ctx.from?.first_name}, ¡atento!`);
+            const participants = await database_1.default.getWantedRaidParticipants(raidBoss);
+            const filteredParticipants = participants.filter((p) => !p.form || !p.form.id || p.form.id == Number(formId));
+            if (filteredParticipants && filteredParticipants.length > 0) {
+                const plist = filteredParticipants.filter((p) => p.user.nick);
+                ctx.reply(filteredParticipants.map((u) => `@${u.user.alias}`).join(' '));
+                if (plist && plist.length > 0) {
+                    if (plist.length > 5) {
+                        for (let i = 0; i < plist.length; i += 5) {
+                            // ctx.reply(plist.slice(i, i + 5).map(p => `@${p.user.alias}`).join(' '))
+                            ctx.replyWithMarkdown(`\`${plist.slice(i, i + 5).map((p) => p.user.nick).join(',')}\``);
                         }
-                        catch { }
                     }
-                });
+                    else {
+                        // ctx.reply(plist.map(p => `@${p.user.alias}`).join(' '))
+                        ctx.replyWithMarkdown(`\`${plist.map((p) => p.user.nick).join(',')}\``);
+                    }
+                    participants.forEach(p => {
+                        if (p.user.chatId) {
+                            try {
+                                bot.telegram.sendMessage(p.user.chatId, `${raidBoss.name} de ${ctx.from?.first_name}, ¡atento!`);
+                            }
+                            catch { }
+                        }
+                    });
+                }
             }
         }
     }
