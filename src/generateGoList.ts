@@ -96,7 +96,7 @@ export const generateGoList = (ctx: Context, reply: Message.TextMessage & Messag
         if (usersRemoved.indexOf(creator) < 0) {
           participants.push(creator)
         }
-        db.insertRaid({ boss: bossTextPlain, creator, date: new Date(Date.now()).toDateString(), time: hour, participants })
+        db.insertRaid({ boss: bossTextPlain.replace("'", "''"), creator, date: new Date(Date.now()).toDateString(), time: hour, participants })
       }
     }
   }

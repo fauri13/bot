@@ -40,7 +40,7 @@ if (production) {
     const certificate = fs_1.default.readFileSync('my_cert.crt', 'utf8');
     const credentials = { key: privateKey, cert: certificate };
     const httpsServer = https_1.default.createServer(credentials, app);
-    httpsServer.listen(8443);
+    httpsServer.listen(port);
 }
 else {
     app.listen(Number.parseInt(port), () => {

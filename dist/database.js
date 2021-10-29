@@ -78,13 +78,26 @@ class DB {
         };
         this.getRaidBoss = (bossId) => {
             return new Promise((resolve, reject) => {
-                this._db.get(`
-        SELECT *
-        FROM RaidBosses
-        WHERE id = ${bossId}
-      `, (_err, row) => {
-                    if (!_err && row) {
-                        resolve(row);
+                this._db.all(`
+        SELECT b.id as id, b.image, b.name, f.id as formId, f.type as formType, f.subtype, f.description
+        FROM RaidBosses b
+        LEFT JOIN Forms f on f.type = b.formType
+        WHERE b.id = ${bossId}
+      `, (_err, rows) => {
+                    if (!_err && rows) {
+                        const boss = {};
+                        if (rows && rows.length > 0) {
+                            boss.id = rows[0].id;
+                            boss.image = rows[0].image;
+                            boss.name = rows[0].name;
+                            boss.forms = rows[0].formType ? rows.map((r) => ({
+                                id: r.formId,
+                                type: r.formType,
+                                subtype: r.subtype,
+                                description: r.description
+                            })) : undefined;
+                        }
+                        resolve(boss);
                     }
                     else {
                         reject(_err);
@@ -116,7 +129,7 @@ class DB {
         this.getWantedRaidParticipants = (boss) => {
             return new Promise((resolve, reject) => {
                 this._db.all(`
-        SELECT *
+        SELECT r.id as id, r.userId, u.telegramId, u.name, u.alias, u.nick, u.chatId, r.formId
         FROM WantedRaidParticipants r
         INNER JOIN Users u ON u.id = r.userId
         WHERE bossId = ${boss.id}
@@ -125,11 +138,15 @@ class DB {
                         resolve(rows.map((r) => ({
                             id: r.id,
                             user: {
-                                id: r.id,
+                                id: r.userId,
                                 telegramId: r.telegramId,
                                 name: r.name,
                                 alias: r.alias,
-                                nick: r.nick
+                                nick: r.nick,
+                                chatId: r.chatId
+                            },
+                            form: {
+                                id: r.formId
                             }
                         })));
                     }
@@ -139,7 +156,7 @@ class DB {
                 });
             });
         };
-        this.insertNewWantedParticipant = (boss, user) => {
+        this.insertNewWantedParticipant = (boss, user, form) => {
             const _this = this;
             this._db.get(`
       SELECT id
@@ -148,8 +165,8 @@ class DB {
     `, function (_err, row) {
                 if (row) {
                     _this._db.run(`
-          INSERT INTO WantedRaidParticipants (bossId, userId)
-          VALUES (${boss.id}, ${row.id})
+          INSERT INTO WantedRaidParticipants (bossId, userId, formId)
+          VALUES (${boss.id}, ${row.id}, ${form?.id ?? 'NULL'})
         `);
                 }
                 else {
@@ -158,8 +175,8 @@ class DB {
           VALUES (${user.telegramId}, '${user.name}', '${user.alias}')
         `, function (_err) {
                         _this._db.run(`
-              INSERT INTO WantedRaidParticipants (bossId, userId)
-              VALUES (${boss.id}, ${this.lastID})
+              INSERT INTO WantedRaidParticipants (bossId, userId, formId)
+              VALUES (${boss.id}, ${this.lastID}, ${form?.id ?? 'NULL'})
             `);
                     });
                 }
@@ -191,6 +208,41 @@ class DB {
                 }
             });
         };
+        this.updateUserChat = (userId, chatId) => {
+            this._db.get(`
+      SELECT *
+      FROM Users
+      WHERE telegramId = ${userId}
+    `, (_err, row) => {
+                if (row && row.chatId !== chatId) {
+                    this._db.run(`
+          UPDATE Users
+          SET chatId = '${chatId}'
+          WHERE id = ${row.id}
+        `);
+                }
+            });
+        };
+        this.createForm = (form) => {
+            this._db.run(`
+      INSERT INTO Forms (type, subtype, description, isAvailable)
+      VALUES (${form.type}, ${form.subtype}, '${form.description}', ${form.isAvailable ? 1 : 0})
+    `);
+        };
+        this.setBossForm = (boss, form) => {
+            this._db.run(`
+      UPDATE RaidBosses
+      SET formType = ${form}
+      WHERE name = '${boss}'
+    `);
+        };
+        this.updateWantedRaidParticipantForm = (participant) => {
+            this._db.run(`
+      UPDATE WantedRaidParticipants
+      SET formId = ${participant.form?.id ?? 'NULL'}
+      WHERE id = ${participant.id}
+    `);
+        };
         if (!dbpath) {
             throw Error('DB undefined');
         }
@@ -200,9 +252,12 @@ class DB {
             }
             this._db.run('CREATE TABLE IF NOT EXISTS Raids (id INTEGER PRIMARY KEY, boss TEXT, creator TEXT, date TEXT, time TEXT)');
             this._db.run('CREATE TABLE IF NOT EXISTS Participants (id INTEGER PRIMARY KEY, raidId INTEGER, participant TEXT)');
-            this._db.run('CREATE TABLE IF NOT EXISTS Users (id INTEGER PRIMARY KEY, telegramId INTEGER, name TEXT, alias TEXT, nick TEXT)');
-            this._db.run('CREATE TABLE IF NOT EXISTS RaidBosses (id INTEGER PRIMARY KEY, name TEXT, image TEXT, prevMessageId INTEGER)');
-            this._db.run('CREATE TABLE IF NOT EXISTS WantedRaidParticipants (id INTEGER PRIMARY KEY, bossId INTEGER, userId integer)');
+            this._db.run('CREATE TABLE IF NOT EXISTS Users (id INTEGER PRIMARY KEY, telegramId INTEGER, name TEXT, alias TEXT, nick TEXT, chatId INTEGER)');
+            this._db.run('CREATE TABLE IF NOT EXISTS RaidBosses (id INTEGER PRIMARY KEY, name TEXT, image TEXT, prevMessageId INTEGER, formType INTEGER)');
+            this._db.run('CREATE TABLE IF NOT EXISTS WantedRaidParticipants (id INTEGER PRIMARY KEY, bossId INTEGER, userId INTEGER, formId INTEGER)');
+            this._db.run('CREATE TABLE IF NOT EXISTS Forms (id INTEGER PRIMARY KEY, type INTEGER, subtype INTEGER, description string, isAvailable INTEGER)');
+            //alter table RaidBosses add column formType integer;
+            //alter table WantedRaidParticipants add column formId integer;
         });
     }
 }

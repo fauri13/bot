@@ -7,37 +7,49 @@ exports.getRaidsMessage = exports.getEnfermosMessage = void 0;
 const underscore_1 = __importDefault(require("underscore"));
 const database_1 = __importDefault(require("./database"));
 const noRaidsMsgs = [
-    'Panda de vagos',
     'Ka pasao?',
     'Yo me voy'
 ];
 const raidsMsgs100 = [
     '¡Estáis que os salís!',
-    'Guau. 🙀'
+    'Guau. 🙀',
+    '😍, me he puesto cachonda y todo',
+    'Se nota que estamos de vacaciones 😏',
+    '🤑'
 ];
 const raidsMsgs50 = [
-    'Está bien.',
     'Enhorabuena',
-    'Se nota que estamos de vacaciones 😏'
+    '¡A ver esos hundos!',
+    '¡A tope!',
+    '👍',
+    'Ahora sí que parece un grupo de raids'
 ];
 const raidsMsgs20 = [
     'No está mal, pero podemos mejorar',
-    'Meh, normalillo'
+    'Meh, normalillo',
+    'No me dais faena ☹️',
+    'Mañana quiero ver más raids eh',
+    'Hoy no me he puesto cachonda 😤',
+    'Pasable.'
 ];
 const raidsMsgs1 = [
     '🥴',
     'Necessita Millorar',
     '¡A ver esos lechugazos mejicanos!',
-    'Flojillo ehh'
+    'Toca pasar por caja para mañana',
+    'Flojillo ehh',
+    'Panda de vagos',
+    '¿Esto es un grupo de raids o de marujas?',
+    'A ver esas raaaids @Esloqahy'
 ];
 const getExtraMessage = (raids) => {
-    if (raids > 100) {
+    if (raids > 60) {
         return underscore_1.default.sample(raidsMsgs100);
     }
-    if (raids >= 50) {
+    if (raids >= 30) {
         return underscore_1.default.sample(raidsMsgs50);
     }
-    if (raids >= 20) {
+    if (raids >= 10) {
         return underscore_1.default.sample(raidsMsgs20);
     }
     return underscore_1.default.sample(raidsMsgs1);

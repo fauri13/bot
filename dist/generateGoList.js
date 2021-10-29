@@ -88,7 +88,7 @@ const generateGoList = (ctx, reply) => {
                 if (usersRemoved.indexOf(creator) < 0) {
                     participants.push(creator);
                 }
-                database_1.default.insertRaid({ boss: bossTextPlain, creator, date: new Date(Date.now()).toDateString(), time: hour, participants });
+                database_1.default.insertRaid({ boss: bossTextPlain.replace("'", "''"), creator, date: new Date(Date.now()).toDateString(), time: hour, participants });
             }
         }
     }

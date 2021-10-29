@@ -20,7 +20,7 @@ const chatAllowed = (chatId) => allowedChats ? allowedChats.indexOf(chatId.toStr
 const userAllowed = (userId) => allowedUsers ? allowedUsers.indexOf(userId.toString()) !== -1 : true;
 const bot = new telegraf_1.Telegraf(token);
 // Generate list from Pikachu
-bot.hears(/^\/?(go|gg|lista|invito|vamos|dale)$/i, async (ctx) => {
+bot.hears(/^\/?(go|gg|lista?|invito|vamos|dale)$/i, async (ctx) => {
     if (chatAllowed(ctx.chat.id) && ctx.message.reply_to_message) {
         generateGoList_1.generateGoList(ctx, ctx.message.reply_to_message);
     }
@@ -33,7 +33,7 @@ bot.hears(/^(?:quiero\s*u?n?|i?\s*want|busco|me interesa)\s*(\w+)/i, (ctx) => {
 });
 bot.hears(/^(?:tengo\s*u?n?|i?\s*have|invito)\s*a?\s*(\w+)/i, (ctx) => {
     if (chatAllowed(ctx.chat.id)) {
-        soloRaiders_1.soloRaidersHave(ctx);
+        soloRaiders_1.soloRaidersHave(ctx, bot);
     }
 });
 bot.command('createboss', (ctx) => {
@@ -48,11 +48,57 @@ bot.command('createboss', (ctx) => {
         ctx.reply(`Agregado ${params[1]}`, { reply_to_message_id: ctx.message.message_id });
     }
 });
+bot.command('createform', (ctx) => {
+    if (chatAllowed(ctx.chat.id) && userAllowed(ctx.from.id)) {
+        const params = ctx.message.text.split(' ');
+        if (params.length > 1) {
+            const type = params[1];
+            for (let i = 2; i < params.length; i += 1) {
+                database_1.default.createForm({
+                    type: Number(type),
+                    description: params[i],
+                    subtype: i - 1,
+                    isAvailable: true
+                });
+            }
+        }
+        ctx.reply(`Agregada forma ${params[1]}`, { reply_to_message_id: ctx.message.message_id });
+    }
+});
+bot.command('setform', (ctx) => {
+    if (chatAllowed(ctx.chat.id) && userAllowed(ctx.from.id)) {
+        const params = ctx.message.text.split(' ');
+        if (params.length > 1) {
+            const boss = params[1];
+            const form = params[2];
+            database_1.default.setBossForm(boss, Number(form));
+        }
+        ctx.reply(`Agregada forma ${params[2]} a ${params[1]}`, { reply_to_message_id: ctx.message.message_id });
+    }
+});
+bot.command('register', (ctx) => {
+    if (ctx.chat.type === 'private') {
+        database_1.default.updateUserChat(ctx.from.id, ctx.chat.id);
+        ctx.reply(`Registrado ${ctx.from.id} ${ctx.chat.id}`);
+    }
+});
+bot.command('unregister', (ctx) => {
+    if (ctx.chat.type === 'private') {
+        database_1.default.updateUserChat(ctx.from.id, '');
+        ctx.reply(`Desregistrado`);
+    }
+});
 bot.action(/join-(\w+)/, (ctx) => {
     soloRaiders_1.addSoloRaider(ctx);
 });
 bot.action(/leave-(\w+)/, (ctx) => {
     soloRaiders_1.removeSoloRaider(ctx);
+});
+bot.action(/form-(\w+)-(\d+)/, (ctx) => {
+    soloRaiders_1.onlyForm(ctx);
+});
+bot.action(/getlist-(\w+)-(\d+)/, (ctx) => {
+    soloRaiders_1.getFormList(ctx, bot);
 });
 // Statistics
 bot.command('raidstoday', async (ctx) => {
