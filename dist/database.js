@@ -294,7 +294,7 @@ class DB {
                         });
                     }
                     else {
-                        reject(_err);
+                        resolve(undefined);
                     }
                 });
             });

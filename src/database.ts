@@ -388,7 +388,7 @@ class DB implements IDatabase {
     })
   }
 
-  public getHofTemp = (id: number): Promise<HOFTemp> => {
+  public getHofTemp = (id: number): Promise<HOFTemp | undefined> => {
     return new Promise((resolve, reject) => {
       this._db.get(
         `
@@ -408,7 +408,7 @@ class DB implements IDatabase {
               },
             })
           } else {
-            reject(_err)
+            resolve(undefined)
           }
         }
       )

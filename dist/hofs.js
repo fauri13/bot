@@ -87,7 +87,10 @@ const verifyHof = async (ctx) => {
     try {
         const id = Number(ctx.match[1]);
         const hof = await database_1.default.getHofTemp(id);
-        if (ctx.from?.id === hof.user?.telegramId && remotasChatId && hofsChatId) {
+        if (hof &&
+            ctx.from?.id === hof.user?.telegramId &&
+            remotasChatId &&
+            hofsChatId) {
             await ctx.telegram.forwardMessage(hofsChatId, remotasChatId, hof.messageId);
             await ctx.telegram.sendMessage(hofsChatId, getHofMessage(hof), {
                 parse_mode: 'HTML',
@@ -124,13 +127,15 @@ const setHofLegendary = async (ctx, legendary) => {
     const id = Number(ctx.match[1]);
     if (id) {
         const hof = await database_1.default.getHofTemp(id);
-        hof.legendary = legendary;
-        database_1.default.setHofTempLegendary(id, legendary);
-        ctx.editMessageText(getHofMessage(hof), {
-            parse_mode: 'HTML',
-            reply_markup: getEditButtons(hof).reply_markup,
-        });
-        ctx.answerCbQuery('Actualizado').catch(() => { });
+        if (hof) {
+            hof.legendary = legendary;
+            database_1.default.setHofTempLegendary(id, legendary);
+            ctx.editMessageText(getHofMessage(hof), {
+                parse_mode: 'HTML',
+                reply_markup: getEditButtons(hof).reply_markup,
+            });
+            ctx.answerCbQuery('Actualizado').catch(() => { });
+        }
     }
 };
 exports.setHofLegendary = setHofLegendary;
@@ -138,13 +143,15 @@ const setHofShiny = async (ctx, shiny) => {
     const id = Number(ctx.match[1]);
     if (id) {
         const hof = await database_1.default.getHofTemp(id);
-        hof.shiny = shiny;
-        database_1.default.setHofTempShiny(id, shiny);
-        ctx.editMessageText(getHofMessage(hof), {
-            parse_mode: 'HTML',
-            reply_markup: getEditButtons(hof).reply_markup,
-        });
-        ctx.answerCbQuery('Updated').catch(() => { });
+        if (hof) {
+            hof.shiny = shiny;
+            database_1.default.setHofTempShiny(id, shiny);
+            ctx.editMessageText(getHofMessage(hof), {
+                parse_mode: 'HTML',
+                reply_markup: getEditButtons(hof).reply_markup,
+            });
+            ctx.answerCbQuery('Updated').catch(() => { });
+        }
     }
 };
 exports.setHofShiny = setHofShiny;
@@ -255,11 +262,13 @@ const confirmHof = async (ctx) => {
     try {
         const id = Number(ctx.match[1]);
         const hof = await database_1.default.getHofTemp(id);
-        database_1.default.persistHof(hof);
-        database_1.default.removeHofTemp(id);
-        ctx.telegram.editMessageText(remotasChatId, hof.botMessageId, undefined, underscore_1.default.sample(hofReviewedPhrases) ?? '');
-        ctx.editMessageText(getHofMessage(hof, true), { parse_mode: 'HTML' });
-        ctx.answerCbQuery('Verified!').catch(() => { });
+        if (hof) {
+            database_1.default.persistHof(hof);
+            database_1.default.removeHofTemp(id);
+            ctx.telegram.editMessageText(remotasChatId, hof.botMessageId, undefined, underscore_1.default.sample(hofReviewedPhrases) ?? '');
+            ctx.editMessageText(getHofMessage(hof, true), { parse_mode: 'HTML' });
+            ctx.answerCbQuery('Verified!').catch(() => { });
+        }
     }
     catch (e) {
         ctx.answerCbQuery(`Error, contact an admin`).catch(() => { });
@@ -270,10 +279,12 @@ const invalidateHof = async (ctx) => {
     try {
         const id = Number(ctx.match[1]);
         const hof = await database_1.default.getHofTemp(id);
-        database_1.default.removeHofTemp(id);
-        ctx.telegram.editMessageText(remotasChatId, hof.botMessageId, undefined, underscore_1.default.sample(hofReviewedPhrasesFail) ?? '', { parse_mode: 'HTML' });
-        ctx.editMessageText(getHofMessage(hof, false), { parse_mode: 'HTML' });
-        ctx.answerCbQuery('Deleted!').catch(() => { });
+        if (hof) {
+            database_1.default.removeHofTemp(id);
+            ctx.telegram.editMessageText(remotasChatId, hof.botMessageId, undefined, underscore_1.default.sample(hofReviewedPhrasesFail) ?? '', { parse_mode: 'HTML' });
+            ctx.editMessageText(getHofMessage(hof, false), { parse_mode: 'HTML' });
+            ctx.answerCbQuery('Deleted!').catch(() => { });
+        }
     }
     catch (e) {
         ctx.answerCbQuery(`Error, contact an admin`).catch(() => { });
