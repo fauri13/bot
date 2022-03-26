@@ -175,7 +175,8 @@ bot.action(/shiny-hof-(\d+)-1/, (ctx) => {
 bot.command('type', (ctx, next) => {
   if (chatHofAllowed(ctx.chat.id)) {
     const params = ctx.message.text.split(' ')
-    const param = params.length > 1 ? params[1] : ''
+    const param =
+      params.length > 1 ? ctx.message.text.slice(params[0].length).trim() : ''
     setHofType(ctx, ctx.message.reply_to_message, param)
     ctx.deleteMessage()
   } else {

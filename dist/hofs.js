@@ -44,7 +44,7 @@ const getButtons = (hof) => {
     return telegraf_1.Markup.inlineKeyboard([buttonsInner]);
 };
 const getHofMessage = (hof, final) => {
-    return `<b>${final === true ? '✅' : final === false ? '❌' : '✏️'} HOF de ${hof.user?.name}</b>
+    return `<a href="https://t.me/c/${remotasChatId?.slice(4)}/${hof.messageId}"><b>${final === true ? '✅' : final === false ? '❌' : '✏️'} HOF de ${hof.user?.name}</b></a>
 
 - Id: ${hof.id}
 - Date: ${hof.date}

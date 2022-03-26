@@ -382,8 +382,8 @@ class DB {
       INSERT INTO Hofs(type, date, nick, boss, shiny, legendary, value)
       VALUES (
         '${hofTemp.type}',
-        '${hofTemp.nick}'
         '${new Date(hofTemp.date).toDateString()}',
+        '${hofTemp.nick}',
         '${hofTemp.boss ?? ''}',
         ${Number(hofTemp.shiny) ?? 0},
         ${Number(hofTemp.legendary) ?? 0},
