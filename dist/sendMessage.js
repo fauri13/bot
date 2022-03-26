@@ -3,14 +3,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.sendMessage = void 0;
 const bluebird_1 = require("bluebird");
 const writeLog_1 = require("./writeLog");
-var queue = [];
-var inUseQueue = [];
+let queue = [];
+let inUseQueue = [];
 const _sendMessages = () => {
     // if we are already sending messages from the queue, or
     // the queue is empty, stop
     if (inUseQueue.length || !queue.length)
         return;
-    writeLog_1.writeLog('processing queue');
+    (0, writeLog_1.writeLog)('processing queue');
     inUseQueue = queue;
     queue = [];
     bluebird_1.Promise.mapSeries(inUseQueue, function (request) {
@@ -19,24 +19,21 @@ const _sendMessages = () => {
         const ctx = request.ctx;
         const type = request.type;
         const options = request.options;
-        writeLog_1.writeLog(`sending message '${request.message}'`);
+        (0, writeLog_1.writeLog)(`sending message '${request.message}'`);
         if (type === 'markdown') {
-            return ctx.replyWithMarkdown(request.message)
-                .then(resolve)
-                .catch(reject);
+            return ctx.replyWithMarkdown(request.message).then(resolve).catch(reject);
         }
         else if (type === 'html') {
-            return ctx.replyWithHTML(request.message, options)
+            return ctx
+                .replyWithHTML(request.message, options)
                 .then(resolve)
                 .catch(reject);
         }
         else {
-            return ctx.reply(request.message)
-                .then(resolve)
-                .catch(reject);
+            return ctx.reply(request.message).then(resolve).catch(reject);
         }
     }).then(function () {
-        writeLog_1.writeLog('queue processed');
+        (0, writeLog_1.writeLog)('queue processed');
         inUseQueue = [];
         _sendMessages();
     });
@@ -49,7 +46,7 @@ const sendMessage = (ctx, type, message, options = {}) => {
         resolve = promiseResolve;
         reject = promiseReject;
     });
-    writeLog_1.writeLog(`pushing message '${message}' to queue`);
+    (0, writeLog_1.writeLog)(`pushing message '${message}' to queue`);
     queue.push({ ctx, message, resolve, reject, type, options });
     process.nextTick(_sendMessages);
     return promise;

@@ -21,7 +21,7 @@ class DB {
             INSERT INTO Raids(boss, creator, date, time)
             VALUES ('${raid.boss}', '${raid.creator}', '${raid.date}', '${raid.time}')`, function () {
                         const raidId = this.lastID;
-                        raid.participants.forEach(p => _this._db.run(`INSERT INTO Participants(raidId, participant) VALUES ('${raidId}', '${p}')`));
+                        raid.participants.forEach((p) => _this._db.run(`INSERT INTO Participants(raidId, participant) VALUES ('${raidId}', '${p}')`));
                     });
                 }
             });
@@ -53,7 +53,7 @@ class DB {
         ORDER BY COUNT(*) desc
       `, (_err, row) => {
                     if (!_err && row) {
-                        resolve(underscore_1.default(row).take(5));
+                        resolve((0, underscore_1.default)(row).take(5));
                     }
                     else {
                         reject(_err);
@@ -90,12 +90,14 @@ class DB {
                             boss.id = rows[0].id;
                             boss.image = rows[0].image;
                             boss.name = rows[0].name;
-                            boss.forms = rows[0].formType ? rows.map((r) => ({
-                                id: r.formId,
-                                type: r.formType,
-                                subtype: r.subtype,
-                                description: r.description
-                            })) : undefined;
+                            boss.forms = rows[0].formType
+                                ? rows.map((r) => ({
+                                    id: r.formId,
+                                    type: r.formType,
+                                    subtype: r.subtype,
+                                    description: r.description,
+                                }))
+                                : undefined;
                         }
                         resolve(boss);
                     }
@@ -143,11 +145,11 @@ class DB {
                                 name: r.name,
                                 alias: r.alias,
                                 nick: r.nick,
-                                chatId: r.chatId
+                                chatId: r.chatId,
                             },
                             form: {
-                                id: r.formId
-                            }
+                                id: r.formId,
+                            },
                         })));
                     }
                     else {
@@ -243,6 +245,152 @@ class DB {
       WHERE id = ${participant.id}
     `);
         };
+        this.getOrInsertUser = (user) => {
+            return new Promise((resolve, reject) => {
+                const _this = this;
+                this._db.get(`
+        SELECT *
+        FROM Users
+        WHERE telegramId = '${user.telegramId}'
+        `, function (_err, row) {
+                    if (row) {
+                        resolve(row);
+                    }
+                    else {
+                        _this._db.run(`
+                INSERT INTO Users (telegramId, name, alias)
+                VALUES (${user.telegramId}, '${user.name}', '${user.alias}')
+                `, function (_err) {
+                            if (_err) {
+                                reject(_err);
+                            }
+                            else {
+                                resolve({
+                                    ...user,
+                                    id: this.lastID,
+                                });
+                            }
+                        });
+                    }
+                });
+            });
+        };
+        this.getHofTemp = (id) => {
+            return new Promise((resolve, reject) => {
+                this._db.get(`
+        SELECT ht.id as id, ht.*, u.telegramId, u.name
+        FROM HofsTemp ht
+        INNER JOIN Users u ON u.id = ht.userId
+        WHERE ht.id = '${id}'
+      `, (_err, row) => {
+                    if (!_err && row) {
+                        resolve({
+                            ...row,
+                            user: {
+                                id: row.userId,
+                                telegramId: row.telegramId,
+                                name: row.name,
+                            },
+                        });
+                    }
+                    else {
+                        reject(_err);
+                    }
+                });
+            });
+        };
+        this.createHofTemp = (hofTemp) => {
+            return new Promise((resolve, reject) => {
+                this._db.run(`
+        INSERT INTO HofsTemp (userId, nick, date, messageId)
+        VALUES (
+          ${hofTemp.user?.id},
+          '${hofTemp.user?.nick}',
+          '${new Date(hofTemp.date).toDateString()}',
+          ${hofTemp.messageId}
+        )
+      `, function (_err) {
+                    if (!_err) {
+                        resolve({
+                            ...hofTemp,
+                            id: this.lastID,
+                        });
+                    }
+                    else {
+                        reject(_err);
+                    }
+                });
+            });
+        };
+        this.setHofTempBotMessage = (hofTempId, botMessageId) => {
+            this._db.run(`
+      UPDATE HofsTemp
+      SET botMessageId = ${botMessageId}
+      WHERE id = ${hofTempId}
+    `);
+        };
+        this.removeHofTemp = (hofTempId) => {
+            this._db.run(`
+      DELETE FROM HofsTemp
+      WHERE id = ${hofTempId}
+    `);
+        };
+        this.setHofTempType = (hofTempId, type) => {
+            this._db.run(`
+      UPDATE HofsTemp
+      SET type = '${type}'
+      WHERE id = ${hofTempId}
+    `);
+        };
+        this.setHofTempBoss = (hofTempId, boss) => {
+            this._db.run(`
+      UPDATE HofsTemp
+      SET boss = '${boss ?? ''}'
+      WHERE id = ${hofTempId}
+    `);
+        };
+        this.setHofTempShiny = (hofTempId, shiny) => {
+            this._db.run(`
+      UPDATE HofsTemp
+      SET shiny = ${Number(shiny)}
+      WHERE id = ${hofTempId}
+    `);
+        };
+        this.setHofTempLegendary = (hofTempId, legendary) => {
+            this._db.run(`
+      UPDATE HofsTemp
+      SET legendary = ${Number(legendary)}
+      WHERE id = ${hofTempId}
+    `);
+        };
+        this.setHofTempValue = (hofTempId, value) => {
+            this._db.run(`
+      UPDATE HofsTemp
+      SET value = '${value ?? ''}'
+      WHERE id = ${hofTempId}
+    `);
+        };
+        this.setHofTempNick = (hofTempId, nick) => {
+            this._db.run(`
+      UPDATE HofsTemp
+      SET nick = '${nick ?? ''}'
+      WHERE id = ${hofTempId}
+    `);
+        };
+        this.persistHof = (hofTemp) => {
+            this._db.run(`
+      INSERT INTO Hofs(type, date, nick, boss, shiny, legendary, value)
+      VALUES (
+        '${hofTemp.type}',
+        '${hofTemp.nick}'
+        '${new Date(hofTemp.date).toDateString()}',
+        '${hofTemp.boss ?? ''}',
+        ${Number(hofTemp.shiny) ?? 0},
+        ${Number(hofTemp.legendary) ?? 0},
+        '${hofTemp.value ?? ''}'
+      )
+    `);
+        };
         if (!dbpath) {
             throw Error('DB undefined');
         }
@@ -256,6 +404,8 @@ class DB {
             this._db.run('CREATE TABLE IF NOT EXISTS RaidBosses (id INTEGER PRIMARY KEY, name TEXT, image TEXT, prevMessageId INTEGER, formType INTEGER)');
             this._db.run('CREATE TABLE IF NOT EXISTS WantedRaidParticipants (id INTEGER PRIMARY KEY, bossId INTEGER, userId INTEGER, formId INTEGER)');
             this._db.run('CREATE TABLE IF NOT EXISTS Forms (id INTEGER PRIMARY KEY, type INTEGER, subtype INTEGER, description string, isAvailable INTEGER)');
+            this._db.run('CREATE TABLE IF NOT EXISTS Hofs (id INTGER PRIMARY KEY, type TEXT, date TEXT, nick TEXT, boss TEXT, shiny INTEGER, legendary INTEGER, value INTEGER)');
+            this._db.run('CREATE TABLE IF NOT EXISTS HofsTemp (id INTEGER PRIMARY KEY, type TEXT, date TEXT, nick TEXT, userId INTEGER, boss TEXT, shiny INTEGER, legendary INTEGER, value INTEGER, messageId INTEGER, botMessageId INTEGER)');
             //alter table RaidBosses add column formType integer;
             //alter table WantedRaidParticipants add column formId integer;
         });

@@ -21,16 +21,22 @@ if (port === undefined) {
 // No need to call bot.launch()
 // Set telegram webhook
 // npm install -g localtunnel && lt --port 3000
-bot_1.default.telegram.setWebhook(endpoint).then(v => {
+bot_1.default.telegram
+    .setWebhook(endpoint)
+    .then((v) => {
     console.log(`Registered to telegram ${v}`);
-}).catch(e => {
+})
+    .catch((e) => {
     console.log(`Error ${e}`);
 });
-const app = express_1.default();
+const app = (0, express_1.default)();
 app.get('/', (req, res) => res.send('It works!'));
 app.post('/troll', (req, a) => {
     if (req.headers.authorization === 'Bearer asistenta' && announcesChatId) {
-        bot_1.default.telegram.sendMessage(announcesChatId, req.body, { disable_web_page_preview: true, parse_mode: 'HTML' });
+        bot_1.default.telegram.sendMessage(announcesChatId, req.body, {
+            disable_web_page_preview: true,
+            parse_mode: 'HTML',
+        });
     }
 });
 // Set the bot API endpoint

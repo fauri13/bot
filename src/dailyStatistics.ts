@@ -1,17 +1,14 @@
-import _ from "underscore"
-import db from "./database"
+import _ from 'underscore'
+import db from './database'
 
-const noRaidsMsgs = [
-  'Ka pasao?',
-  'Yo me voy'
-]
+const noRaidsMsgs = ['Ka pasao?', 'Yo me voy']
 
 const raidsMsgs100 = [
   '¡Estáis que os salís!',
   'Guau. 🙀',
   '😍, me he puesto cachonda y todo',
   'Se nota que estamos de vacaciones 😏',
-  '🤑'
+  '🤑',
 ]
 
 const raidsMsgs50 = [
@@ -19,7 +16,7 @@ const raidsMsgs50 = [
   '¡A ver esos hundos!',
   '¡A tope!',
   '👍',
-  'Ahora sí que parece un grupo de raids'
+  'Ahora sí que parece un grupo de raids',
 ]
 
 const raidsMsgs20 = [
@@ -28,7 +25,7 @@ const raidsMsgs20 = [
   'No me dais faena ☹️',
   'Mañana quiero ver más raids eh',
   'Hoy no me he puesto cachonda 😤',
-  'Pasable.'
+  'Pasable.',
 ]
 
 const raidsMsgs1 = [
@@ -39,7 +36,7 @@ const raidsMsgs1 = [
   'Flojillo ehh',
   'Panda de vagos',
   '¿Esto es un grupo de raids o de marujas?',
-  'A ver esas raaaids @Esloqahy'
+  'A ver esas raaaids @Esloqahy',
 ]
 
 const getExtraMessage = (raids: number) => {
@@ -58,7 +55,9 @@ const getExtraMessage = (raids: number) => {
 export const getEnfermosMessage = async (date: string) => {
   const enfermos = await db.getTopRaidParticipants(date)
   if (enfermos && enfermos.length) {
-    return `Los enfermos de hoy son:${enfermos.map((e, index) => `\n${index + 1}. ${e.participant} (${e.count})`).join('')}`
+    return `Los enfermos de hoy son:${enfermos
+      .map((e, index) => `\n${index + 1}. ${e.participant} (${e.count})`)
+      .join('')}`
   } else {
     return 'No hay enfermos hoy 😳'
   }
@@ -67,9 +66,10 @@ export const getEnfermosMessage = async (date: string) => {
 export const getRaidsMessage = async (date: string) => {
   const raids = await db.getRaids(date)
   if (raids) {
-    return `Hoy se ha${raids > 1 ? 'n' : ''} hecho ${raids} raid${raids > 1 ? 's' : ''}\n${getExtraMessage(raids)}`
-  }
-  else {
+    return `Hoy se ha${raids > 1 ? 'n' : ''} hecho ${raids} raid${
+      raids > 1 ? 's' : ''
+    }\n${getExtraMessage(raids)}`
+  } else {
     return `No se han hecho raids hoy 😳\n${_.sample(noRaidsMsgs)}`
   }
 }
