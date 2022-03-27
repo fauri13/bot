@@ -153,7 +153,7 @@ bot.action(/verify-hof-(\d+)/, (ctx) => {
   verifyHof(ctx)
 })
 bot.action(/cancel-hof-(\d+)/, (ctx) => {
-  verifyHof(ctx)
+  deleteHof(ctx)
 })
 bot.on('photo', (ctx, next) => {
   if (ctx.message.caption?.match(/^#?hof.*/i)) {
