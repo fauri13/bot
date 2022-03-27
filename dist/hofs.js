@@ -66,21 +66,23 @@ const getEditButtons = (hof) => {
     return telegraf_1.Markup.inlineKeyboard([buttonsChecks, buttonsInner]);
 };
 const startHof = async (ctx, reply) => {
-    const user = await database_1.default.getOrInsertUser({
-        telegramId: reply.from.id,
-        name: reply.from.first_name,
-        alias: reply.from.username,
-    });
-    const hof = await database_1.default.createHofTemp({
-        user: user,
-        date: new Date((reply?.date ?? 0) * 1000),
-        messageId: reply?.message_id,
-    });
-    const response = await ctx.replyWithMarkdown(underscore_1.default.sample(hofPhrases) ?? '', {
-        reply_to_message_id: ctx.message?.message_id,
-        reply_markup: getButtons(hof).reply_markup,
-    });
-    database_1.default.setHofTempBotMessage(hof.id, response.message_id);
+    if (reply && reply.from && (reply.photo || reply.document)) {
+        const user = await database_1.default.getOrInsertUser({
+            telegramId: reply.from.id,
+            name: reply.from.first_name,
+            alias: reply.from.username,
+        });
+        const hof = await database_1.default.createHofTemp({
+            user: user,
+            date: new Date((reply?.date ?? 0) * 1000),
+            messageId: reply.message_id,
+        });
+        const response = await ctx.replyWithMarkdown(underscore_1.default.sample(hofPhrases) ?? '', {
+            reply_to_message_id: ctx.message?.message_id,
+            reply_markup: getButtons(hof).reply_markup,
+        });
+        database_1.default.setHofTempBotMessage(hof.id, response.message_id);
+    }
 };
 exports.startHof = startHof;
 const verifyHof = async (ctx) => {
@@ -258,20 +260,42 @@ const setHofNick = async (ctx, reply, nick) => {
     }
 };
 exports.setHofNick = setHofNick;
+const validateHof = (hof) => {
+    if (!hof) {
+        return 'Invalid HOF';
+    }
+    if (!hof.nick) {
+        return 'IGN missing';
+    }
+    if (!hof.type) {
+        return 'Type missing';
+    }
+    if (hof.type === '0' || hof.type === '100') {
+        if (!hof.boss) {
+            return 'Boss missing';
+        }
+    }
+    return null;
+};
 const confirmHof = async (ctx) => {
     try {
         const id = Number(ctx.match[1]);
         const hof = await database_1.default.getHofTemp(id);
-        if (hof) {
-            database_1.default.persistHof(hof);
+        const errors = validateHof(hof);
+        if (hof && !errors) {
+            await database_1.default.persistHof(hof);
             database_1.default.removeHofTemp(id);
             ctx.telegram.editMessageText(remotasChatId, hof.botMessageId, undefined, underscore_1.default.sample(hofReviewedPhrases) ?? '');
             ctx.editMessageText(getHofMessage(hof, true), { parse_mode: 'HTML' });
             ctx.answerCbQuery('Verified!').catch(() => { });
         }
+        else {
+            ctx.answerCbQuery(errors ?? 'unexpected error', { show_alert: true });
+        }
     }
     catch (e) {
-        ctx.answerCbQuery(`Error, contact an admin`).catch(() => { });
+        ctx.answerCbQuery(`Error, check logs`, { show_alert: true }).catch(() => { });
+        console.log(e);
     }
 };
 exports.confirmHof = confirmHof;

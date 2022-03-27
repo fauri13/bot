@@ -117,8 +117,9 @@ bot.action(/getlist-(\w+)-(\d*)/, (ctx) => {
 // Hofs
 bot.command('hof', (ctx) => {
     if (chatAllowed(ctx.chat.id) &&
-        userHofAllowed(ctx.from.id) &&
-        ctx.message.reply_to_message) {
+        ctx.message.reply_to_message &&
+        (userHofAllowed(ctx.from.id) ||
+            ctx.from.id === ctx.message.reply_to_message.from?.id)) {
         (0, hofs_1.startHof)(ctx, ctx.message.reply_to_message);
     }
     ctx.deleteMessage(ctx.message.message_id);

@@ -141,8 +141,9 @@ bot.action(/getlist-(\w+)-(\d*)/, (ctx) => {
 bot.command('hof', (ctx) => {
   if (
     chatAllowed(ctx.chat.id) &&
-    userHofAllowed(ctx.from.id) &&
-    ctx.message.reply_to_message
+    ctx.message.reply_to_message &&
+    (userHofAllowed(ctx.from.id) ||
+      ctx.from.id === ctx.message.reply_to_message.from?.id)
   ) {
     startHof(ctx, ctx.message.reply_to_message)
   }

@@ -504,19 +504,28 @@ class DB implements IDatabase {
     `)
   }
 
-  public persistHof = (hofTemp: HOFTemp) => {
-    this._db.run(`
-      INSERT INTO Hofs(type, date, nick, boss, shiny, legendary, value)
-      VALUES (
-        '${hofTemp.type}',
-        '${new Date(hofTemp.date).toDateString()}',
-        '${hofTemp.nick}',
-        '${hofTemp.boss ?? ''}',
-        ${Number(hofTemp.shiny) ?? 0},
-        ${Number(hofTemp.legendary) ?? 0},
-        '${hofTemp.value ?? ''}'
+  public persistHof = (hofTemp: HOFTemp): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      this._db.run(
+        `INSERT INTO Hofs(type, date, nick, boss, shiny, legendary, value)
+         VALUES (
+           '${hofTemp.type}',
+           '${new Date(hofTemp.date).toDateString()}',
+           '${hofTemp.nick}',
+           '${hofTemp.boss ?? ''}',
+           ${Number(hofTemp.shiny) ?? 0},
+           ${Number(hofTemp.legendary) ?? 0},
+           '${hofTemp.value ?? ''}'
+         )`,
+        (_err) => {
+          if (_err) {
+            reject(_err)
+          } else {
+            resolve()
+          }
+        }
       )
-    `)
+    })
   }
 }
 
