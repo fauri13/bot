@@ -2,6 +2,7 @@ import { Context, Markup } from 'telegraf'
 import { Message, Update } from 'telegraf/typings/core/types/typegram'
 import _ from 'underscore'
 import db, { HOFTemp } from './database'
+import { userHofAllowed } from './validations'
 
 const remotasChatId = process.env.REMOTAS_CHAT_ID
 const hofsChatId = process.env.HOFS_CHAT_ID
@@ -85,23 +86,25 @@ export const startHof = async (
   ctx: Context<Update>,
   reply?: Partial<Message.PhotoMessage & Message.DocumentMessage>
 ) => {
-  if (reply && reply.from && (reply.photo || reply.document)) {
-    const user = await db.getOrInsertUser({
-      telegramId: reply.from.id,
-      name: reply.from.first_name,
-      alias: reply.from.username,
-    })
-    const hof = await db.createHofTemp({
-      user: user,
-      date: new Date((reply?.date ?? 0) * 1000),
-      messageId: reply.message_id,
-    })
-    const response = await ctx.replyWithMarkdown(_.sample(hofPhrases) ?? '', {
-      reply_to_message_id: ctx.message?.message_id,
-      reply_markup: getButtons(hof).reply_markup,
-    })
-    db.setHofTempBotMessage(hof.id, response.message_id)
-  }
+  try {
+    if (reply && reply.from && (reply.photo || reply.document)) {
+      const user = await db.getOrInsertUser({
+        telegramId: reply.from.id,
+        name: reply.from.first_name,
+        alias: reply.from.username,
+      })
+      const hof = await db.createHofTemp({
+        user: user,
+        date: new Date((reply?.date ?? 0) * 1000),
+        messageId: reply.message_id,
+      })
+      const response = await ctx.replyWithMarkdown(_.sample(hofPhrases) ?? '', {
+        reply_to_message_id: reply?.message_id,
+        reply_markup: getButtons(hof).reply_markup,
+      })
+      db.setHofTempBotMessage(hof.id, response.message_id)
+    }
+  } catch {}
 }
 
 export const verifyHof = async (
@@ -114,7 +117,7 @@ export const verifyHof = async (
     const hof = await db.getHofTemp(id)
     if (
       hof &&
-      ctx.from?.id === hof.user?.telegramId &&
+      (ctx.from?.id === hof.user?.telegramId || userHofAllowed(ctx.from!.id)) &&
       remotasChatId &&
       hofsChatId
     ) {
@@ -140,19 +143,23 @@ export const verifyHof = async (
   }
 }
 
-export const deleteHof = (
+export const deleteHof = async (
   ctx: Context<Update> & {
     match: RegExpExecArray
   }
 ) => {
   const id = Number(ctx.match[1])
-  if (id) {
+  const hof = await db.getHofTemp(id)
+  if (
+    hof &&
+    (ctx.from?.id === hof.user?.telegramId || userHofAllowed(ctx.from!.id))
+  ) {
     db.removeHofTemp(id)
+    ctx.deleteMessage()
+    ctx.answerCbQuery('Ok').catch(() => {})
+  } else {
+    ctx.answerCbQuery('You cannot do that 🤨').catch(() => {})
   }
-  ctx.deleteMessage()
-  try {
-    ctx.answerCbQuery('Ok', { show_alert: true })
-  } catch {}
 }
 
 export const setHofLegendary = async (
@@ -188,10 +195,12 @@ export const setHofShiny = async (
     if (hof) {
       hof.shiny = shiny
       db.setHofTempShiny(id, shiny)
-      ctx.editMessageText(getHofMessage(hof), {
-        parse_mode: 'HTML',
-        reply_markup: getEditButtons(hof).reply_markup,
-      })
+      ctx
+        .editMessageText(getHofMessage(hof), {
+          parse_mode: 'HTML',
+          reply_markup: getEditButtons(hof).reply_markup,
+        })
+        .catch(() => {})
       ctx.answerCbQuery('Updated').catch(() => {})
     }
   }
@@ -237,16 +246,18 @@ export const setHofType = async (
               return
           }
           db.setHofTempType(hof.id, hof.type)
-          ctx.telegram.editMessageText(
-            reply.chat?.id,
-            reply.message_id,
-            undefined,
-            getHofMessage(hof),
-            {
-              parse_mode: 'HTML',
-              reply_markup: getEditButtons(hof).reply_markup,
-            }
-          )
+          ctx.telegram
+            .editMessageText(
+              reply.chat?.id,
+              reply.message_id,
+              undefined,
+              getHofMessage(hof),
+              {
+                parse_mode: 'HTML',
+                reply_markup: getEditButtons(hof).reply_markup,
+              }
+            )
+            .catch(() => {})
         }
       }
     }
@@ -267,16 +278,18 @@ export const setHofBoss = async (
         if (hof) {
           hof.boss = boss
           db.setHofTempBoss(hof.id, boss)
-          ctx.telegram.editMessageText(
-            reply.chat?.id,
-            reply.message_id,
-            undefined,
-            getHofMessage(hof),
-            {
-              parse_mode: 'HTML',
-              reply_markup: getEditButtons(hof).reply_markup,
-            }
-          )
+          ctx.telegram
+            .editMessageText(
+              reply.chat?.id,
+              reply.message_id,
+              undefined,
+              getHofMessage(hof),
+              {
+                parse_mode: 'HTML',
+                reply_markup: getEditButtons(hof).reply_markup,
+              }
+            )
+            .catch(() => {})
         }
       }
     }
@@ -297,16 +310,18 @@ export const setHofValue = async (
         if (hof) {
           hof.value = value
           db.setHofTempValue(hof.id, value)
-          ctx.telegram.editMessageText(
-            reply.chat?.id,
-            reply.message_id,
-            undefined,
-            getHofMessage(hof),
-            {
-              parse_mode: 'HTML',
-              reply_markup: getEditButtons(hof).reply_markup,
-            }
-          )
+          ctx.telegram
+            .editMessageText(
+              reply.chat?.id,
+              reply.message_id,
+              undefined,
+              getHofMessage(hof),
+              {
+                parse_mode: 'HTML',
+                reply_markup: getEditButtons(hof).reply_markup,
+              }
+            )
+            .catch(() => {})
         }
       }
     }
@@ -327,16 +342,18 @@ export const setHofNick = async (
         if (hof) {
           hof.nick = nick
           db.setHofTempNick(hof.id, nick)
-          ctx.telegram.editMessageText(
-            reply.chat?.id,
-            reply.message_id,
-            undefined,
-            getHofMessage(hof),
-            {
-              parse_mode: 'HTML',
-              reply_markup: getEditButtons(hof).reply_markup,
-            }
-          )
+          ctx.telegram
+            .editMessageText(
+              reply.chat?.id,
+              reply.message_id,
+              undefined,
+              getHofMessage(hof),
+              {
+                parse_mode: 'HTML',
+                reply_markup: getEditButtons(hof).reply_markup,
+              }
+            )
+            .catch(() => {})
         }
       }
     }

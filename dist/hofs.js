@@ -7,6 +7,7 @@ exports.invalidateHof = exports.confirmHof = exports.setHofNick = exports.setHof
 const telegraf_1 = require("telegraf");
 const underscore_1 = __importDefault(require("underscore"));
 const database_1 = __importDefault(require("./database"));
+const validations_1 = require("./validations");
 const remotasChatId = process.env.REMOTAS_CHAT_ID;
 const hofsChatId = process.env.HOFS_CHAT_ID;
 const hofPhrases = [
@@ -66,23 +67,26 @@ const getEditButtons = (hof) => {
     return telegraf_1.Markup.inlineKeyboard([buttonsChecks, buttonsInner]);
 };
 const startHof = async (ctx, reply) => {
-    if (reply && reply.from && (reply.photo || reply.document)) {
-        const user = await database_1.default.getOrInsertUser({
-            telegramId: reply.from.id,
-            name: reply.from.first_name,
-            alias: reply.from.username,
-        });
-        const hof = await database_1.default.createHofTemp({
-            user: user,
-            date: new Date((reply?.date ?? 0) * 1000),
-            messageId: reply.message_id,
-        });
-        const response = await ctx.replyWithMarkdown(underscore_1.default.sample(hofPhrases) ?? '', {
-            reply_to_message_id: ctx.message?.message_id,
-            reply_markup: getButtons(hof).reply_markup,
-        });
-        database_1.default.setHofTempBotMessage(hof.id, response.message_id);
+    try {
+        if (reply && reply.from && (reply.photo || reply.document)) {
+            const user = await database_1.default.getOrInsertUser({
+                telegramId: reply.from.id,
+                name: reply.from.first_name,
+                alias: reply.from.username,
+            });
+            const hof = await database_1.default.createHofTemp({
+                user: user,
+                date: new Date((reply?.date ?? 0) * 1000),
+                messageId: reply.message_id,
+            });
+            const response = await ctx.replyWithMarkdown(underscore_1.default.sample(hofPhrases) ?? '', {
+                reply_to_message_id: reply?.message_id,
+                reply_markup: getButtons(hof).reply_markup,
+            });
+            database_1.default.setHofTempBotMessage(hof.id, response.message_id);
+        }
     }
+    catch { }
 };
 exports.startHof = startHof;
 const verifyHof = async (ctx) => {
@@ -90,7 +94,7 @@ const verifyHof = async (ctx) => {
         const id = Number(ctx.match[1]);
         const hof = await database_1.default.getHofTemp(id);
         if (hof &&
-            ctx.from?.id === hof.user?.telegramId &&
+            (ctx.from?.id === hof.user?.telegramId || (0, validations_1.userHofAllowed)(ctx.from.id)) &&
             remotasChatId &&
             hofsChatId) {
             await ctx.telegram.forwardMessage(hofsChatId, remotasChatId, hof.messageId);
@@ -113,16 +117,18 @@ const verifyHof = async (ctx) => {
     }
 };
 exports.verifyHof = verifyHof;
-const deleteHof = (ctx) => {
+const deleteHof = async (ctx) => {
     const id = Number(ctx.match[1]);
-    if (id) {
+    const hof = await database_1.default.getHofTemp(id);
+    if (hof &&
+        (ctx.from?.id === hof.user?.telegramId || (0, validations_1.userHofAllowed)(ctx.from.id))) {
         database_1.default.removeHofTemp(id);
+        ctx.deleteMessage();
+        ctx.answerCbQuery('Ok').catch(() => { });
     }
-    ctx.deleteMessage();
-    try {
-        ctx.answerCbQuery('Ok', { show_alert: true });
+    else {
+        ctx.answerCbQuery('You cannot do that 🤨').catch(() => { });
     }
-    catch { }
 };
 exports.deleteHof = deleteHof;
 const setHofLegendary = async (ctx, legendary) => {
@@ -148,10 +154,12 @@ const setHofShiny = async (ctx, shiny) => {
         if (hof) {
             hof.shiny = shiny;
             database_1.default.setHofTempShiny(id, shiny);
-            ctx.editMessageText(getHofMessage(hof), {
+            ctx
+                .editMessageText(getHofMessage(hof), {
                 parse_mode: 'HTML',
                 reply_markup: getEditButtons(hof).reply_markup,
-            });
+            })
+                .catch(() => { });
             ctx.answerCbQuery('Updated').catch(() => { });
         }
     }
@@ -190,10 +198,12 @@ const setHofType = async (ctx, reply, type) => {
                             return;
                     }
                     database_1.default.setHofTempType(hof.id, hof.type);
-                    ctx.telegram.editMessageText(reply.chat?.id, reply.message_id, undefined, getHofMessage(hof), {
+                    ctx.telegram
+                        .editMessageText(reply.chat?.id, reply.message_id, undefined, getHofMessage(hof), {
                         parse_mode: 'HTML',
                         reply_markup: getEditButtons(hof).reply_markup,
-                    });
+                    })
+                        .catch(() => { });
                 }
             }
         }
@@ -210,10 +220,12 @@ const setHofBoss = async (ctx, reply, boss) => {
                 if (hof) {
                     hof.boss = boss;
                     database_1.default.setHofTempBoss(hof.id, boss);
-                    ctx.telegram.editMessageText(reply.chat?.id, reply.message_id, undefined, getHofMessage(hof), {
+                    ctx.telegram
+                        .editMessageText(reply.chat?.id, reply.message_id, undefined, getHofMessage(hof), {
                         parse_mode: 'HTML',
                         reply_markup: getEditButtons(hof).reply_markup,
-                    });
+                    })
+                        .catch(() => { });
                 }
             }
         }
@@ -230,10 +242,12 @@ const setHofValue = async (ctx, reply, value) => {
                 if (hof) {
                     hof.value = value;
                     database_1.default.setHofTempValue(hof.id, value);
-                    ctx.telegram.editMessageText(reply.chat?.id, reply.message_id, undefined, getHofMessage(hof), {
+                    ctx.telegram
+                        .editMessageText(reply.chat?.id, reply.message_id, undefined, getHofMessage(hof), {
                         parse_mode: 'HTML',
                         reply_markup: getEditButtons(hof).reply_markup,
-                    });
+                    })
+                        .catch(() => { });
                 }
             }
         }
@@ -250,10 +264,12 @@ const setHofNick = async (ctx, reply, nick) => {
                 if (hof) {
                     hof.nick = nick;
                     database_1.default.setHofTempNick(hof.id, nick);
-                    ctx.telegram.editMessageText(reply.chat?.id, reply.message_id, undefined, getHofMessage(hof), {
+                    ctx.telegram
+                        .editMessageText(reply.chat?.id, reply.message_id, undefined, getHofMessage(hof), {
                         parse_mode: 'HTML',
                         reply_markup: getEditButtons(hof).reply_markup,
-                    });
+                    })
+                        .catch(() => { });
                 }
             }
         }

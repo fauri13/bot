@@ -24,25 +24,18 @@ import {
   setHofNick,
   invalidateHof,
 } from './hofs'
+import {
+  chatAllowed,
+  chatHofAllowed,
+  userAllowed,
+  userHofAllowed,
+} from './validations'
 
 const token = process.env.BOT_TOKEN
-const allowedChats = process.env.ALLOWED_CHATS
-const allowedHofChats = process.env.HOFS_CHAT_ID
-const allowedUsers = process.env.ALLOWED_USERS
-const allowedHofUsers = process.env.ALLOWED_HOF_USERS
 const announcesChatId = process.env.ANNOUNCES_CHAT_ID
 if (token === undefined) {
   throw new Error('BOT_TOKEN must be provided!')
 }
-
-const chatAllowed = (chatId: number) =>
-  allowedChats ? allowedChats.indexOf(chatId.toString()) !== -1 : true
-const userAllowed = (userId: number) =>
-  allowedUsers ? allowedUsers.indexOf(userId.toString()) !== -1 : true
-const userHofAllowed = (userId: number) =>
-  allowedHofUsers ? allowedHofUsers.indexOf(userId.toString()) !== -1 : true
-const chatHofAllowed = (chatId: number) =>
-  allowedHofChats ? allowedHofChats.indexOf(chatId.toString()) !== -1 : true
 
 const bot = new Telegraf(token)
 // Generate list from Pikachu
@@ -187,7 +180,8 @@ bot.command('type', (ctx, next) => {
 bot.command('boss', (ctx, next) => {
   if (chatHofAllowed(ctx.chat.id)) {
     const params = ctx.message.text.split(' ')
-    const param = params.length > 1 ? params[1] : ''
+    const param =
+      params.length > 1 ? ctx.message.text.slice(params[0].length).trim() : ''
     setHofBoss(ctx, ctx.message.reply_to_message, param)
     ctx.deleteMessage()
   } else {
@@ -197,7 +191,8 @@ bot.command('boss', (ctx, next) => {
 bot.command('value', (ctx, next) => {
   if (chatHofAllowed(ctx.chat.id)) {
     const params = ctx.message.text.split(' ')
-    const param = params.length > 1 ? params[1] : ''
+    const param =
+      params.length > 1 ? ctx.message.text.slice(params[0].length).trim() : ''
     setHofValue(ctx, ctx.message.reply_to_message, param)
     ctx.deleteMessage()
   } else {
@@ -207,7 +202,8 @@ bot.command('value', (ctx, next) => {
 bot.command('ign', (ctx, next) => {
   if (chatHofAllowed(ctx.chat.id)) {
     const params = ctx.message.text.split(' ')
-    const param = params.length > 1 ? params[1] : ''
+    const param =
+      params.length > 1 ? ctx.message.text.slice(params[0].length).trim() : ''
     setHofNick(ctx, ctx.message.reply_to_message, param)
     ctx.deleteMessage()
   } else {
@@ -258,7 +254,7 @@ bot.command('enfermosayer', async (ctx) => {
 // Status
 bot.command('ping', (ctx) => {
   if (userAllowed(ctx.from.id)) {
-    ctx.reply('pong')
+    ctx.reply('pong v2.0123')
   }
 })
 

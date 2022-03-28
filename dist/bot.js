@@ -10,39 +10,32 @@ const node_cron_1 = __importDefault(require("node-cron"));
 const dailyStatistics_1 = require("./dailyStatistics");
 const soloRaiders_1 = require("./soloRaiders");
 const hofs_1 = require("./hofs");
+const validations_1 = require("./validations");
 const token = process.env.BOT_TOKEN;
-const allowedChats = process.env.ALLOWED_CHATS;
-const allowedHofChats = process.env.HOFS_CHAT_ID;
-const allowedUsers = process.env.ALLOWED_USERS;
-const allowedHofUsers = process.env.ALLOWED_HOF_USERS;
 const announcesChatId = process.env.ANNOUNCES_CHAT_ID;
 if (token === undefined) {
     throw new Error('BOT_TOKEN must be provided!');
 }
-const chatAllowed = (chatId) => allowedChats ? allowedChats.indexOf(chatId.toString()) !== -1 : true;
-const userAllowed = (userId) => allowedUsers ? allowedUsers.indexOf(userId.toString()) !== -1 : true;
-const userHofAllowed = (userId) => allowedHofUsers ? allowedHofUsers.indexOf(userId.toString()) !== -1 : true;
-const chatHofAllowed = (chatId) => allowedHofChats ? allowedHofChats.indexOf(chatId.toString()) !== -1 : true;
 const bot = new telegraf_1.Telegraf(token);
 // Generate list from Pikachu
 bot.hears(/^\/?(go|gg|lista?|invito|vamos|dale)$/i, (ctx) => {
-    if (chatAllowed(ctx.chat.id) && ctx.message.reply_to_message) {
+    if ((0, validations_1.chatAllowed)(ctx.chat.id) && ctx.message.reply_to_message) {
         (0, generateGoList_1.generateGoList)(ctx, ctx.message.reply_to_message);
     }
 });
 // Solo raiders
 bot.hears(/^(?:quiero\s*u?n?|i?\s*want|busco|me interesa)\s*(\w+)/i, (ctx) => {
-    if (chatAllowed(ctx.chat.id)) {
+    if ((0, validations_1.chatAllowed)(ctx.chat.id)) {
         (0, soloRaiders_1.soloRaidersWanted)(ctx);
     }
 });
 bot.hears(/^(?:tengo\s*u?n?|i?\s*have|invito)\s*a?\s*(\w+)/i, (ctx) => {
-    if (chatAllowed(ctx.chat.id)) {
+    if ((0, validations_1.chatAllowed)(ctx.chat.id)) {
         (0, soloRaiders_1.soloRaidersHave)(ctx, bot);
     }
 });
 bot.command('createboss', async (ctx) => {
-    if (chatAllowed(ctx.chat.id) && userAllowed(ctx.from.id)) {
+    if ((0, validations_1.chatAllowed)(ctx.chat.id) && (0, validations_1.userAllowed)(ctx.from.id)) {
         const params = ctx.message.text.split(' ');
         if (params.length > 1) {
             database_1.default.insertRaidBoss({
@@ -57,7 +50,7 @@ bot.command('createboss', async (ctx) => {
     await ctx.deleteMessage(ctx.message.message_id);
 });
 bot.command('createform', async (ctx) => {
-    if (chatAllowed(ctx.chat.id) && userAllowed(ctx.from.id)) {
+    if ((0, validations_1.chatAllowed)(ctx.chat.id) && (0, validations_1.userAllowed)(ctx.from.id)) {
         const params = ctx.message.text.split(' ');
         if (params.length > 1) {
             const type = params[1];
@@ -77,7 +70,7 @@ bot.command('createform', async (ctx) => {
     await ctx.deleteMessage(ctx.message.message_id);
 });
 bot.command('setform', async (ctx) => {
-    if (chatAllowed(ctx.chat.id) && userAllowed(ctx.from.id)) {
+    if ((0, validations_1.chatAllowed)(ctx.chat.id) && (0, validations_1.userAllowed)(ctx.from.id)) {
         const params = ctx.message.text.split(' ');
         if (params.length > 1) {
             const boss = params[1];
@@ -116,9 +109,9 @@ bot.action(/getlist-(\w+)-(\d*)/, (ctx) => {
 });
 // Hofs
 bot.command('hof', (ctx) => {
-    if (chatAllowed(ctx.chat.id) &&
+    if ((0, validations_1.chatAllowed)(ctx.chat.id) &&
         ctx.message.reply_to_message &&
-        (userHofAllowed(ctx.from.id) ||
+        ((0, validations_1.userHofAllowed)(ctx.from.id) ||
             ctx.from.id === ctx.message.reply_to_message.from?.id)) {
         (0, hofs_1.startHof)(ctx, ctx.message.reply_to_message);
     }
@@ -128,7 +121,7 @@ bot.action(/verify-hof-(\d+)/, (ctx) => {
     (0, hofs_1.verifyHof)(ctx);
 });
 bot.action(/cancel-hof-(\d+)/, (ctx) => {
-    (0, hofs_1.verifyHof)(ctx);
+    (0, hofs_1.deleteHof)(ctx);
 });
 bot.on('photo', (ctx, next) => {
     if (ctx.message.caption?.match(/^#?hof.*/i)) {
@@ -149,7 +142,7 @@ bot.action(/shiny-hof-(\d+)-1/, (ctx) => {
     (0, hofs_1.setHofShiny)(ctx, true);
 });
 bot.command('type', (ctx, next) => {
-    if (chatHofAllowed(ctx.chat.id)) {
+    if ((0, validations_1.chatHofAllowed)(ctx.chat.id)) {
         const params = ctx.message.text.split(' ');
         const param = params.length > 1 ? ctx.message.text.slice(params[0].length).trim() : '';
         (0, hofs_1.setHofType)(ctx, ctx.message.reply_to_message, param);
@@ -160,9 +153,9 @@ bot.command('type', (ctx, next) => {
     }
 });
 bot.command('boss', (ctx, next) => {
-    if (chatHofAllowed(ctx.chat.id)) {
+    if ((0, validations_1.chatHofAllowed)(ctx.chat.id)) {
         const params = ctx.message.text.split(' ');
-        const param = params.length > 1 ? params[1] : '';
+        const param = params.length > 1 ? ctx.message.text.slice(params[0].length).trim() : '';
         (0, hofs_1.setHofBoss)(ctx, ctx.message.reply_to_message, param);
         ctx.deleteMessage();
     }
@@ -171,9 +164,9 @@ bot.command('boss', (ctx, next) => {
     }
 });
 bot.command('value', (ctx, next) => {
-    if (chatHofAllowed(ctx.chat.id)) {
+    if ((0, validations_1.chatHofAllowed)(ctx.chat.id)) {
         const params = ctx.message.text.split(' ');
-        const param = params.length > 1 ? params[1] : '';
+        const param = params.length > 1 ? ctx.message.text.slice(params[0].length).trim() : '';
         (0, hofs_1.setHofValue)(ctx, ctx.message.reply_to_message, param);
         ctx.deleteMessage();
     }
@@ -182,9 +175,9 @@ bot.command('value', (ctx, next) => {
     }
 });
 bot.command('ign', (ctx, next) => {
-    if (chatHofAllowed(ctx.chat.id)) {
+    if ((0, validations_1.chatHofAllowed)(ctx.chat.id)) {
         const params = ctx.message.text.split(' ');
-        const param = params.length > 1 ? params[1] : '';
+        const param = params.length > 1 ? ctx.message.text.slice(params[0].length).trim() : '';
         (0, hofs_1.setHofNick)(ctx, ctx.message.reply_to_message, param);
         ctx.deleteMessage();
     }
@@ -200,14 +193,14 @@ bot.action(/delete-hof-(\d+)/, (ctx) => {
 });
 // Statistics
 bot.command('raidstoday', async (ctx) => {
-    if (chatAllowed(ctx.chat.id) && userAllowed(ctx.from.id)) {
+    if ((0, validations_1.chatAllowed)(ctx.chat.id) && (0, validations_1.userAllowed)(ctx.from.id)) {
         ctx.deleteMessage(ctx.message.message_id);
         ctx.reply(await (0, dailyStatistics_1.getRaidsMessage)(new Date().toDateString()));
     }
     ctx.deleteMessage(ctx.message.message_id);
 });
 bot.command('raidsyesterday', async (ctx) => {
-    if (chatAllowed(ctx.chat.id) && userAllowed(ctx.from.id)) {
+    if ((0, validations_1.chatAllowed)(ctx.chat.id) && (0, validations_1.userAllowed)(ctx.from.id)) {
         const date = new Date();
         date.setDate(date.getDate() - 1);
         ctx.deleteMessage(ctx.message.message_id);
@@ -216,14 +209,14 @@ bot.command('raidsyesterday', async (ctx) => {
     ctx.deleteMessage(ctx.message.message_id);
 });
 bot.command('enfermos', async (ctx) => {
-    if (chatAllowed(ctx.chat.id) && userAllowed(ctx.from.id)) {
+    if ((0, validations_1.chatAllowed)(ctx.chat.id) && (0, validations_1.userAllowed)(ctx.from.id)) {
         ctx.deleteMessage(ctx.message.message_id);
         ctx.reply(await (0, dailyStatistics_1.getEnfermosMessage)(new Date().toDateString()));
     }
     ctx.deleteMessage(ctx.message.message_id);
 });
 bot.command('enfermosayer', async (ctx) => {
-    if (chatAllowed(ctx.chat.id) && userAllowed(ctx.from.id)) {
+    if ((0, validations_1.chatAllowed)(ctx.chat.id) && (0, validations_1.userAllowed)(ctx.from.id)) {
         const date = new Date();
         date.setDate(date.getDate() - 1);
         ctx.deleteMessage(ctx.message.message_id);
@@ -233,8 +226,8 @@ bot.command('enfermosayer', async (ctx) => {
 });
 // Status
 bot.command('ping', (ctx) => {
-    if (userAllowed(ctx.from.id)) {
-        ctx.reply('pong');
+    if ((0, validations_1.userAllowed)(ctx.from.id)) {
+        ctx.reply('pong v2.0123');
     }
 });
 if (announcesChatId) {
