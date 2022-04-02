@@ -1,7 +1,7 @@
 import { Context, Markup } from 'telegraf'
 import { Message, Update } from 'telegraf/typings/core/types/typegram'
 import _ from 'underscore'
-import db, { HOFTemp } from './database'
+import db, { HOFTemp, HOFType } from './database'
 import { userHofAllowed } from './validations'
 
 const remotasChatId = process.env.REMOTAS_CHAT_ID
@@ -23,13 +23,38 @@ const hofReviewPhrases = [
   '🕒 Be patient\n🕒 A esperar',
 ]
 
-const hofReviewedPhrases = [
-  'So it is really a HOF, gz! 🥳\nPues era un HOF de verdad, ¡enhorabuena! 🥳',
-  'So it is really a HOF, gz! 🎉\nPues era un HOF de verdad, ¡enhorabuena! 🎉',
-  'So it is really a HOF, gz! 🎊\nPues era un HOF de verdad, ¡enhorabuena! 🎊',
-  'WOW, good HOF!\nWOW, ¡buen HOF!',
-  "You're killing it!\n¡Estás que te sales!",
-]
+const hofReviewedPhrases: Record<HOFType, Array<string>> = {
+  '100': [
+    'So it is really a HOF, gz! 🥳\nPues era un HOF de verdad, ¡enhorabuena! 🥳',
+    'So it is really a HOF, gz! 🎉\nPues era un HOF de verdad, ¡enhorabuena! 🎉',
+    'So it is really a HOF, gz! 🎊\nPues era un HOF de verdad, ¡enhorabuena! 🎊',
+    'WOW, good HOF!\nWOW, ¡buen HOF!',
+    "You're killing it!\n¡Estás que te sales!",
+  ],
+  '0': [
+    "Ouch, but it's a HOF...\nUish, pero es un HOF...",
+    "Well, it's a HOF 🤪\nBueno, es un HOF 🤪",
+    'Validated, my condolences\nValidado, mis condolencias',
+    '✅ 😕',
+  ],
+  '1000 Raids/Pokémon': ['WOW, good HOF!\nWOW, ¡buen HOF!'],
+  '10000 Raids': [
+    'WOW, good HOF! Now to 20.000!\nWOW, ¡buen HOF! Ahora a las 20 000!',
+  ],
+  '5 Golds': [
+    'Nice! Keep riding new gyms!\n¡Genial! ¡Continúa raideando nuevos gyms!',
+  ],
+  Bronze: ['✅ 🥉'],
+  'Full Team': ['✅'],
+  Gold: ['✅ 🥇'],
+  'Monthly Raids': ['Yeah!'],
+  'Perfect Shoot': [
+    'Great! But Raúl is not here anymore 😰\n¡Bien! Pero Raúl ya no está aquí 😰',
+  ],
+  Platino: ['✅'],
+  Silver: ['✅ 🥈'],
+  'Weekly Raids': ['✅'],
+}
 
 const hofReviewedPhrasesFail = [
   'Nice try\nBuen intento',
@@ -394,7 +419,7 @@ export const confirmHof = async (
         remotasChatId,
         hof.botMessageId,
         undefined,
-        _.sample(hofReviewedPhrases) ?? ''
+        _.sample(hofReviewedPhrases[hof.type!]) ?? '✅'
       )
       ctx.editMessageText(getHofMessage(hof, true), { parse_mode: 'HTML' })
       ctx.answerCbQuery('Verified!').catch(() => {})
