@@ -10,11 +10,12 @@ import db, { Form, RaidBoss, WantedRaidParticipants } from './database'
 
 const getParticipantText = (
   participant: WantedRaidParticipants,
-  index: number
+  index: number,
+  tag = false
 ) =>
   `\n${index + 1}. <a href="https://t.me/${participant.user.alias}">${
-    participant.user.name
-  } (${participant.user.nick})</a>`
+    participant.user.nick ?? participant.user.name
+  } ${tag ? `(@${participant.user.alias})` : ''}</a>`
 
 const getParticipantsText = (
   participants: Array<WantedRaidParticipants>,
@@ -37,7 +38,7 @@ const getParticipantsText = (
     return `${all}\n\n${rest}`
   }
   return `La lista de interesados es:${participants
-    .map((p, index) => getParticipantText(p, index))
+    .map((p, index) => getParticipantText(p, index, true))
     .join('')}`
 }
 
@@ -152,7 +153,6 @@ export const soloRaidersHave = async (
       raidBoss = await db.getRaidBoss(raidBoss.id!)
       if (raidBoss) {
         const from = ctx.from!
-        const hasForms = raidBoss.forms && raidBoss.forms.length > 0
         const participants = await db.getWantedRaidParticipants(raidBoss)
         const buttons = getButtons(raidBoss)
         const m = await ctx.replyWithPhoto(raidBoss.image!, {
@@ -170,46 +170,6 @@ export const soloRaidersHave = async (
         const plist = participants.filter(
           (p) => p.user.nick && p.user.telegramId != from.id
         )
-        if (!hasForms && plist && plist.length > 0) {
-          if (plist.length > 5) {
-            for (let i = 0; i < plist.length; i += 5) {
-              // ctx.reply(plist.slice(i, i + 5).map(p => `@${p.user.alias}`).join(' '))
-              ctx.replyWithMarkdown(
-                `\`${plist
-                  .slice(i, i + 5)
-                  .map((p) => p.user.nick)
-                  .join(',')}\``
-              )
-            }
-          } else {
-            // ctx.reply(plist.map(p => `@${p.user.alias}`).join(' '))
-            ctx.replyWithMarkdown(
-              `\`${plist.map((p) => p.user.nick).join(',')}\``
-            )
-          }
-          participants.forEach((p) => {
-            if (p.user.chatId) {
-              try {
-                bot.telegram.sendMessage(
-                  p.user.chatId,
-                  `${raidBoss!.name} de ${ctx.from?.first_name}, ¡atento!`
-                )
-              } catch {}
-            }
-          })
-        }
-        if (hasForms) {
-          participants.forEach((p) => {
-            if (p.user.chatId) {
-              try {
-                bot.telegram.sendMessage(
-                  p.user.chatId,
-                  `${raidBoss!.name} de ${ctx.from?.first_name}, ¡atento!`
-                )
-              } catch {}
-            }
-          })
-        }
       }
     }
   }
@@ -351,17 +311,15 @@ export const getFormList = async (
       if (filteredParticipants && filteredParticipants.length > 0) {
         const plist = filteredParticipants.filter((p) => p.user.nick)
         await ctx.reply(
-          filteredParticipants
-            .map(
-              (u) =>
-                `${raidBoss.name} de ${from.first_name}, atentos!\n@${u.user.alias}`
-            )
-            .join(' ')
+          `${raidBoss.name} de ${
+            from.first_name
+          }, atentos!\n\n${filteredParticipants
+            .map((u) => `@${u.user.alias} `)
+            .join(' ')}`
         )
         if (plist && plist.length > 0) {
           if (plist.length > 5) {
             for (let i = 0; i < plist.length; i += 5) {
-              // ctx.reply(plist.slice(i, i + 5).map(p => `@${p.user.alias}`).join(' '))
               await ctx.replyWithMarkdown(
                 `\`${plist
                   .slice(i, i + 5)
@@ -370,7 +328,6 @@ export const getFormList = async (
               )
             }
           } else {
-            // ctx.reply(plist.map(p => `@${p.user.alias}`).join(' '))
             await ctx.replyWithMarkdown(
               `\`${plist.map((p) => p.user.nick).join(',')}\``
             )
