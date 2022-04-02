@@ -15,7 +15,7 @@ const getParticipantText = (
 ) =>
   `\n${index + 1}. <a href="https://t.me/${participant.user.alias}">${
     participant.user.nick ?? participant.user.name
-  } ${tag ? `(@${participant.user.alias})` : ''}</a>`
+  }</a> ${tag ? `(@${participant.user.alias})` : ''}`
 
 const getParticipantsText = (
   participants: Array<WantedRaidParticipants>,
